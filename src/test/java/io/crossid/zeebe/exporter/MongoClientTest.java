@@ -9,6 +9,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.UpdateOneModel;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.ValueType;
@@ -33,21 +34,21 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
     private MongoExporterConfiguration configuration;
     private Logger logSpy;
     private ZeebeMongoClient client;
-    private HashMap<String, List<UpdateOneModel<Document>>>  bulkRequest;
+    private List<Tuple<String, ReplaceOneModel<Document>>>  bulkRequest;
 
     @Before
     public void init() {
         mongo.withPort(SocketUtil.getNextAddress().getPort()).start();
         configuration = getDefaultConfiguration();
         logSpy = spy(LoggerFactory.getLogger(MongoClientTest.class));
-        bulkRequest = new HashMap<String, List<UpdateOneModel<Document>>>();
+        bulkRequest = new ArrayList<>();
         client = new ZeebeMongoClient(configuration, logSpy, bulkRequest);
     }
 
     @Test
     public void shouldNotLogWarningWhenIndexingSmallVariableValue() {
         // given
-        final String variableValue = "x".repeat(configuration.col.ignoreVariablesAbove);
+//        final String variableValue = "x".repeat(configuration.col.ignoreVariablesAbove);
 
         final Record<VariableRecordValue> recordMock = mock(Record.class);
         when(recordMock.getPartitionId()).thenReturn(1);
@@ -56,11 +57,12 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
         when(recordMock.toJson()).thenReturn("{}");
 
         final VariableRecordValue value = mock(VariableRecordValue.class);
-        when(value.getValue()).thenReturn(variableValue);
+        when(value.getValue()).thenReturn("{ a : '1234'}");
         when(recordMock.getValue()).thenReturn(value);
 
         // when
         client.insert(recordMock);
+        client.flush();
 
         // then
         verify(logSpy, never()).warn(anyString(), ArgumentMatchers.<Object[]>any());

@@ -1,10 +1,11 @@
 package io.crossid.zeebe.exporter;
 
+import com.google.gson.Gson;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.ReplaceOneModel;
-import com.mongodb.client.model.UpdateOneModel;
-import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.ReplaceOneModel;
+import com.mongodb.client.model.ReplaceOptions;
 import io.crossid.zeebe.exporter.dto.BulkResponse;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -13,6 +14,7 @@ import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import org.bson.Document;
+import org.bson.json.JsonParseException;
 import org.slf4j.Logger;
 import io.zeebe.protocol.record.ValueType;
 
@@ -34,7 +36,7 @@ class Tuple<X, Y> {
 public class ZeebeMongoClient {
     private final Logger log;
 //    private final DateTimeFormatter formatter;
-    private final List<Tuple<String,UpdateOneModel<Document>>> bulkOperations;
+    private final List<Tuple<String,ReplaceOneModel<Document>>> bulkOperations;
     private final MongoExporterConfiguration configuration;
     private final MongoClient client;
     public static final String COL_DELIMITER = "_";
@@ -47,7 +49,7 @@ public class ZeebeMongoClient {
     ZeebeMongoClient(
             final MongoExporterConfiguration configuration,
             final Logger log,
-            final List<Tuple<String,UpdateOneModel<Document>>> bulkOperations) {
+            final List<Tuple<String,ReplaceOneModel<Document>>> bulkOperations) {
         this.configuration = configuration;
         this.log = log;
         this.client = createClient();
@@ -67,7 +69,7 @@ public class ZeebeMongoClient {
         bulk(newUpsertCommand(record));
     }
 
-    public void bulk(final List<Tuple<String, UpdateOneModel<Document>>> bulkOperation) {
+    public void bulk(final List<Tuple<String, ReplaceOneModel<Document>>> bulkOperation) {
         // TODO: generalise, cache, etc
 
         if (bulkOperation == null) {
@@ -104,7 +106,7 @@ public class ZeebeMongoClient {
 //        var bulkResponse = new BulkResponse();
 
         // Split the operations to collections
-        var ops = new HashMap<String, List<UpdateOneModel<Document>>>();
+        var ops = new HashMap<String, List<ReplaceOneModel<Document>>>();
         for (var op : bulkOperations) {
             if (!ops.containsKey(op.x)) {
                 ops.put(op.x, new ArrayList<>());
@@ -148,7 +150,7 @@ public class ZeebeMongoClient {
         for (var collectionName : ops.keySet()) {
             final var operationsPerCollection = ops.get(collectionName);
             if (!operationsPerCollection.isEmpty()) {
-                List<Tuple<String, UpdateOneModel<Document>>> converted = operationsPerCollection.stream()
+                List<Tuple<String, ReplaceOneModel<Document>>> converted = operationsPerCollection.stream()
                         .map(y -> new Tuple<>(collectionName, y))
                         .collect(Collectors.toCollection(LinkedList::new));
 
@@ -173,6 +175,10 @@ public class ZeebeMongoClient {
         return 0;
     }
 
+    public boolean createCollection(ValueType valueType) {
+        return true;
+    }
+
     private String getCollectionName(final Record<?> record) {
         return indexPrefixForValueType(record.getValueType());
     }
@@ -185,31 +191,39 @@ public class ZeebeMongoClient {
         return valueType.name().toLowerCase();
     }
 
-    private List<Tuple<String, UpdateOneModel<Document>>> newUpsertCommand(final Record<?> record) {
+    private List<Tuple<String, ReplaceOneModel<Document>>> newUpsertCommand(final Record<?> record) {
         final var valueType = record.getValueType();
 
 
         switch (valueType) {
-            case JOB: return jobUpsertCommand(record);
-            case DEPLOYMENT: return deploymentUpsertCommand(record);
-            case WORKFLOW_INSTANCE: return jobUpsertCommand(record);
-            case INCIDENT: return jobUpsertCommand(record);
-            case MESSAGE: return jobUpsertCommand(record);
-            case MESSAGE_SUBSCRIPTION: return jobUpsertCommand(record);
-            case WORKFLOW_INSTANCE_SUBSCRIPTION: return jobUpsertCommand(record);
-            case JOB_BATCH: return jobUpsertCommand(record);
-            case TIMER: return jobUpsertCommand(record);
-            case MESSAGE_START_EVENT_SUBSCRIPTION: return jobUpsertCommand(record);
-            case VARIABLE: return jobUpsertCommand(record);
-            case VARIABLE_DOCUMENT: return jobUpsertCommand(record);
-            case WORKFLOW_INSTANCE_CREATION: return jobUpsertCommand(record);
-            case ERROR: return jobUpsertCommand(record);
-            case WORKFLOW_INSTANCE_RESULT: return jobUpsertCommand(record);
+            case JOB: return handleJobEvent(record);
+            case DEPLOYMENT: return handleDeploymentEvent(record);
+//            case WORKFLOW_INSTANCE: return jobUpsertCommand(record);
+//            case INCIDENT: return jobUpsertCommand(record);
+//            case MESSAGE: return jobUpsertCommand(record);
+//            case MESSAGE_SUBSCRIPTION: return jobUpsertCommand(record);
+//            case WORKFLOW_INSTANCE_SUBSCRIPTION: return jobUpsertCommand(record);
+//            case JOB_BATCH: return jobUpsertCommand(record);
+//            case TIMER: return jobUpsertCommand(record);
+//            case MESSAGE_START_EVENT_SUBSCRIPTION: return jobUpsertCommand(record);
+            case VARIABLE: return handleVariableEvent(record);
+//            case VARIABLE_DOCUMENT: return jobUpsertCommand(record);
+//            case WORKFLOW_INSTANCE_CREATION: return jobUpsertCommand(record);
+//            case ERROR: return jobUpsertCommand(record);
+//            case WORKFLOW_INSTANCE_RESULT: return jobUpsertCommand(record);
             default: return null;
         }
     }
 
-    private List<Tuple<String, UpdateOneModel<Document>>> jobUpsertCommand(final Record<?> record) {
+    private Object parseJsonValue(final String value) {
+        var json = "{ value : " + value + "}";
+
+        Map<String,Object> result = new Gson().fromJson(json, Map.class);
+
+        return  result.get("value");
+    }
+
+    private List<Tuple<String, ReplaceOneModel<Document>>> handleJobEvent(final Record<?> record) {
         var castRecord = (JobRecordValue) record.getValue();
 
         var document =  new Document("_id", record.getKey())
@@ -234,24 +248,24 @@ public class ZeebeMongoClient {
                 document.append("state", "ACTIVATABLE"); break;
         }
 
-        var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
-        result.add(new Tuple<>(getCollectionName(record), new UpdateOneModel<>(
+        var result = new ArrayList<Tuple<String, ReplaceOneModel<Document>>>();
+        result.add(new Tuple<>(getCollectionName(record), new ReplaceOneModel<>(
                 new Document("_id", record.getKey()),
                 document,
-                new UpdateOptions().upsert(true)
+                new ReplaceOptions().upsert(true)
         )));
 
         return result;
     }
 
-    private List<Tuple<String, UpdateOneModel<Document>>> deploymentUpsertCommand(final Record<?> record) {
+    private List<Tuple<String, ReplaceOneModel<Document>>> handleDeploymentEvent(final Record<?> record) {
         if (!record.getIntent().name().equals("DISTRIBUTED")) {
             return null;
         }
 
         var castRecord = (DeploymentRecordValue) record.getValue();
 
-        var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
+        var result = new ArrayList<Tuple<String, ReplaceOneModel<Document>>>();
         var timestamp = new Date(record.getTimestamp());
 
         for (var workflow : castRecord.getDeployedWorkflows()) {
@@ -261,7 +275,7 @@ public class ZeebeMongoClient {
         return result;
     }
 
-    private UpdateOneModel<Document> workflowUpsertCommand(DeployedWorkflow record, Date timestamp) {
+    private ReplaceOneModel<Document> workflowUpsertCommand(DeployedWorkflow record, Date timestamp) {
         var document = new Document("_id", record.getWorkflowKey())
                 .append("bpmnProcessId", record.getBpmnProcessId())
                 .append("version", record.getVersion())
@@ -269,17 +283,62 @@ public class ZeebeMongoClient {
                 .append("timestamp", timestamp);
 
 
-        return new UpdateOneModel<>(
+        return new ReplaceOneModel<>(
                 new Document("_id", record.getWorkflowKey()),
                 document,
-                new UpdateOptions().upsert(true)
+                new ReplaceOptions().upsert(true)
         );
+    }
+
+    private List<Tuple<String, ReplaceOneModel<Document>>> handleVariableEvent(final Record<?> record) {
+        var result = new ArrayList<Tuple<String, ReplaceOneModel<Document>>>();
+        result.add(variableUpsertCommand(record));
+        result.add(variableUpdateUpsertCommand(record));
+
+        return result;
+    }
+
+
+    private Tuple<String, ReplaceOneModel<Document>> variableUpsertCommand(final Record<?> record) {
+        var castRecord = (VariableRecordValue) record.getValue();
+
+        var document =  new Document()
+                .append("name", castRecord.getName())
+                .append("workflowInstanceKey", castRecord.getWorkflowInstanceKey())
+                .append("scopeKey", castRecord.getScopeKey())
+                .append("value", parseJsonValue(castRecord.getValue()))
+                .append("timestamp", new Date(record.getTimestamp()));
+
+        return new Tuple<>(getCollectionName(record), new ReplaceOneModel<>(
+                new Document("_id", record.getKey()),
+                document,
+                new ReplaceOptions().upsert(true)
+        ));
+    }
+
+    private Tuple<String, ReplaceOneModel<Document>> variableUpdateUpsertCommand(final Record<?> record) {
+        var castRecord = (VariableRecordValue) record.getValue();
+
+        var document =  new Document()
+                .append("variableKey", record.getKey())
+                .append("name", castRecord.getName())
+                .append("value", parseJsonValue(castRecord.getValue()))
+                .append("workflowInstanceKey", castRecord.getWorkflowInstanceKey())
+                .append("scopeKey", castRecord.getScopeKey())
+                .append("timestamp", new Date(record.getTimestamp()));
+
+
+        return new Tuple<>(getCollectionName(record)+"_update", new ReplaceOneModel<>(
+                new Document("_id", record.getPosition()),
+                document,
+                new ReplaceOptions().upsert(true)
+        ));
     }
 
 
 
 //
-//    private UpdateOneModel<Document> workflowInstanceUpsertCommand(final Record<?> record) {
+//    private ReplaceOneModel<Document> workflowInstanceUpsertCommand(final Record<?> record) {
 //        var castRecord = (WorkflowInstanceRecordValue) record.getValue();
 //        var document = new Document("_id", castRecord.getWorkflowInstanceKey())
 //                .append("bpmnProcessId", castRecord.getBpmnProcessId())
@@ -294,10 +353,10 @@ public class ZeebeMongoClient {
 //            document.append("parentElementInstanceKey", castRecord.getParentElementInstanceKey());
 //        }
 //
-//        return new UpdateOneModel<>(
+//        return new ReplaceOneModel<>(
 //                new Document("_id", castRecord.getWorkflowInstanceKey()),
 //                document,
-//                new UpdateOptions().upsert(true)
+//                new ReplaceOptions().upsert(true)
 //        );
 //    }
 //
