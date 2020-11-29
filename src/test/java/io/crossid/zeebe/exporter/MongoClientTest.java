@@ -9,17 +9,18 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.mongodb.client.MongoClient;
+import com.mongodb.client.model.UpdateOneModel;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.value.VariableRecordValue;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import io.zeebe.test.util.socket.SocketUtil;
+import org.bson.Document;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -31,16 +32,16 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
     private static final long RECORD_KEY = 1234L;
     private MongoExporterConfiguration configuration;
     private Logger logSpy;
-    private MgoClient client;
-    private ArrayList<String> bulkRequest;
+    private ZeebeMongoClient client;
+    private HashMap<String, List<UpdateOneModel<Document>>>  bulkRequest;
 
     @Before
     public void init() {
         mongo.withPort(SocketUtil.getNextAddress().getPort()).start();
         configuration = getDefaultConfiguration();
         logSpy = spy(LoggerFactory.getLogger(MongoClientTest.class));
-        bulkRequest = new ArrayList<>();
-        client = new MgoClient(configuration, logSpy, bulkRequest);
+        bulkRequest = new HashMap<String, List<UpdateOneModel<Document>>>();
+        client = new ZeebeMongoClient(configuration, logSpy, bulkRequest);
     }
 
     @Test

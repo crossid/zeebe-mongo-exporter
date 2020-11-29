@@ -22,7 +22,7 @@ public class MongoExporter implements Exporter {
     private Controller controller;
 
     private MongoExporterConfiguration configuration;
-    private MgoClient client;
+    private ZeebeMongoClient client;
 
     private long lastPosition = -1;
     private boolean colsCreated;
@@ -93,8 +93,8 @@ public class MongoExporter implements Exporter {
         }
     }
 
-    protected MgoClient createClient() {
-        return new MgoClient(configuration, log);
+    protected ZeebeMongoClient createClient() {
+        return new ZeebeMongoClient(configuration, log);
     }
 
     private void flushAndReschedule() {

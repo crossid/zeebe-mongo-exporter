@@ -21,14 +21,14 @@ import static org.mockito.Mockito.*;
 
 public class MongoExporterTest_OLD {
     private MongoExporterConfiguration config;
-    private MgoClient mgoClient;
+    private ZeebeMongoClient zeebeMongoClient;
 
     private long lastExportedRecordPosition;
 
     @Before
     public void setUp() {
         config = new MongoExporterConfiguration();
-        mgoClient = mockMongoClient();
+        zeebeMongoClient = mockMongoClient();
     }
 
     @Test
@@ -51,15 +51,15 @@ public class MongoExporterTest_OLD {
 
         // then
 //        verify(mgoClient).putIndexTemplate("foo-bar", ZEEBE_RECORD_TEMPLATE_JSON);
-        verify(mgoClient).createCollection(ValueType.DEPLOYMENT);
-        verify(mgoClient).createCollection(ValueType.INCIDENT);
-        verify(mgoClient).createCollection(ValueType.JOB);
-        verify(mgoClient).createCollection(ValueType.JOB_BATCH);
-        verify(mgoClient).createCollection(ValueType.MESSAGE);
-        verify(mgoClient).createCollection(ValueType.MESSAGE_SUBSCRIPTION);
+        verify(zeebeMongoClient).createCollection(ValueType.DEPLOYMENT);
+        verify(zeebeMongoClient).createCollection(ValueType.INCIDENT);
+        verify(zeebeMongoClient).createCollection(ValueType.JOB);
+        verify(zeebeMongoClient).createCollection(ValueType.JOB_BATCH);
+        verify(zeebeMongoClient).createCollection(ValueType.MESSAGE);
+        verify(zeebeMongoClient).createCollection(ValueType.MESSAGE_SUBSCRIPTION);
 //        verify(esClient).putIndexTemplate(ValueType.RAFT);
-        verify(mgoClient).createCollection(ValueType.WORKFLOW_INSTANCE);
-        verify(mgoClient).createCollection(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
+        verify(zeebeMongoClient).createCollection(ValueType.WORKFLOW_INSTANCE);
+        verify(zeebeMongoClient).createCollection(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
     }
 
     @Test
@@ -95,7 +95,7 @@ public class MongoExporterTest_OLD {
         for (ValueType valueType : valueTypes) {
             final Record record = mockRecord(valueType, RecordType.EVENT);
             exporter.export(record);
-            verify(mgoClient).insert(record);
+            verify(zeebeMongoClient).insert(record);
         }
     }
 
@@ -132,7 +132,7 @@ public class MongoExporterTest_OLD {
         for (ValueType valueType : valueTypes) {
             final Record record = mockRecord(valueType, RecordType.EVENT);
             exporter.export(record);
-            verify(mgoClient, never()).insert(record);
+            verify(zeebeMongoClient, never()).insert(record);
         }
     }
 
@@ -153,7 +153,7 @@ public class MongoExporterTest_OLD {
         for (RecordType recordType : recordTypes) {
             final Record record = mockRecord(ValueType.DEPLOYMENT, recordType);
             exporter.export(record);
-            verify(mgoClient).insert(record);
+            verify(zeebeMongoClient).insert(record);
         }
     }
 
@@ -174,7 +174,7 @@ public class MongoExporterTest_OLD {
         for (RecordType recordType : recordTypes) {
             final Record record = mockRecord(ValueType.DEPLOYMENT, recordType);
             exporter.export(record);
-            verify(mgoClient, never()).insert(record);
+            verify(zeebeMongoClient, never()).insert(record);
         }
     }
 
@@ -189,14 +189,14 @@ public class MongoExporterTest_OLD {
         exporter.export(record);
 
         // then
-        verify(mgoClient, never()).insert(record);
+        verify(zeebeMongoClient, never()).insert(record);
     }
 
     @Test
     public void shouldUpdateLastPositionOnFlush() {
         // given
         final MongoExporter exporter = createExporter(config);
-        when(mgoClient.shouldFlush()).thenReturn(true);
+        when(zeebeMongoClient.shouldFlush()).thenReturn(true);
 
         final long position = 1234L;
         final Record record = mockRecord(ValueType.WORKFLOW_INSTANCE, RecordType.EVENT);
@@ -218,7 +218,7 @@ public class MongoExporterTest_OLD {
         exporter.close();
 
         // then
-        verify(mgoClient).flush();
+        verify(zeebeMongoClient).flush();
     }
 
     private MongoExporter createExporter(
@@ -226,8 +226,8 @@ public class MongoExporterTest_OLD {
         final MongoExporter exporter =
                 new MongoExporter() {
                     @Override
-                    protected MgoClient createClient() {
-                        return mgoClient;
+                    protected ZeebeMongoClient createClient() {
+                        return zeebeMongoClient;
                     }
                 };
         exporter.configure(createContext(configuration));
@@ -284,8 +284,8 @@ public class MongoExporterTest_OLD {
         };
     }
 
-    private MgoClient mockMongoClient() {
-        final MgoClient client = mock(MgoClient.class);
+    private ZeebeMongoClient mockMongoClient() {
+        final ZeebeMongoClient client = mock(ZeebeMongoClient.class);
 //        when(client.flush()).thenReturn(true);
         // todo needed?
 //        when(client.createCollection(any(ValueType.class))).thenReturn(true);

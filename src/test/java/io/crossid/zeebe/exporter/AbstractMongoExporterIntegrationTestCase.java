@@ -5,12 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.internal.MongoClientImpl;
 import io.crossid.zeebe.exporter.util.MongoContainer;
 import io.crossid.zeebe.exporter.util.MongoNode;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.ValueType;
 import io.zeebe.test.exporter.ExporterIntegrationRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.ZbLogger;
@@ -124,7 +121,7 @@ public class AbstractMongoExporterIntegrationTestCase {
         return configuration;
     }
 
-    protected static class MongoTestClient extends MgoClient {
+    protected static class MongoTestClient extends ZeebeMongoClient {
         private static final ObjectMapper MAPPER = new ObjectMapper();
 
         MongoTestClient(
