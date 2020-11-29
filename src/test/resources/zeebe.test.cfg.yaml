@@ -1,0 +1,23 @@
+  zeebe:
+    broker:
+      exporters:
+        - id: mongo
+          className: io.crossid.zeebe.exporter.MongoExporter
+          args:
+            url: mongodb://root:passwd@mongo:27017
+            db: zeebe
+            index:
+              db: zeebe
+              prefix: zeebe
+              createCollection: true
+              command: true
+              event: true
+              rejection: true
+              deployment: true
+              incident: true
+              job: true
+              jobBatch: true
+              message: true
+              messageSubscription: true
+              workflowInstance: true
+              workflowInstanceSubscription: true
