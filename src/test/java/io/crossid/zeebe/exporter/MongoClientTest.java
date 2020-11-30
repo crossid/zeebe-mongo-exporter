@@ -57,7 +57,7 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
         when(recordMock.toJson()).thenReturn("{}");
 
         final VariableRecordValue value = mock(VariableRecordValue.class);
-        when(value.getValue()).thenReturn("{ a : '1234'}");
+        when(value.getValue()).thenReturn("1234");
         when(recordMock.getValue()).thenReturn(value);
 
         // when
