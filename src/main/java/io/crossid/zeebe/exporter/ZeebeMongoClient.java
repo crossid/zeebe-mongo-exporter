@@ -198,7 +198,7 @@ public class ZeebeMongoClient {
 //            case WORKFLOW_INSTANCE_SUBSCRIPTION: return jobReplaceCommand(record);
 //            case JOB_BATCH: return jobReplaceCommand(record);
             case TIMER: return handleTimerEvent(record);
-//            case MESSAGE_START_EVENT_SUBSCRIPTION: return jobReplaceCommand(record);
+            case MESSAGE_START_EVENT_SUBSCRIPTION: return handleMessageSubscriptionEvent(record);
             case VARIABLE: return handleVariableEvent(record);
 //            case VARIABLE_DOCUMENT: return jobReplaceCommand(record);
 //            case WORKFLOW_INSTANCE_CREATION: return jobReplaceCommand(record);
@@ -531,6 +531,26 @@ public class ZeebeMongoClient {
         return result;
     }
 
+    private List<Tuple<String, UpdateOneModel<Document>>> handleMessageSubscriptionEvent(final Record<?> record) {
+        var castRecord = (MessageSubscriptionRecordValue) record.getValue();
+
+        var document =  new Document()
+                .append("messageName", castRecord.getMessageName())
+                .append("correlationKey", castRecord.getCorrelationKey())
+                .append("workflowInstanceKey", castRecord.getWorkflowInstanceKey())
+                .append("elementInstanceKey", castRecord.getElementInstanceKey())
+                .append("timestamp", new Date(record.getTimestamp()))
+                .append("state", record.getIntent().name());
+
+        var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
+        result.add(new Tuple<>(getCollectionName(record), new UpdateOneModel<>(
+                new Document("_id", record.getPosition()),
+                new Document("$set", document),
+                new UpdateOptions().upsert(true)
+        )));
+
+        return result;
+    }
 
 
 
