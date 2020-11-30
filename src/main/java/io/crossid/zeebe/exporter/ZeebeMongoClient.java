@@ -194,7 +194,7 @@ public class ZeebeMongoClient {
             case WORKFLOW_INSTANCE: return handleWorkflowInstanceEvent(record);
             case INCIDENT: return handleIncidentEvent(record);
             case MESSAGE: return handleMessageEvent(record);
-//            case MESSAGE_SUBSCRIPTION: return jobReplaceCommand(record);
+            case MESSAGE_SUBSCRIPTION: return handleMessageSubscriptionStartEvent(record);
 //            case WORKFLOW_INSTANCE_SUBSCRIPTION: return jobReplaceCommand(record);
 //            case JOB_BATCH: return jobReplaceCommand(record);
             case TIMER: return handleTimerEvent(record);
@@ -552,7 +552,26 @@ public class ZeebeMongoClient {
         return result;
     }
 
+    private List<Tuple<String, UpdateOneModel<Document>>> handleMessageSubscriptionStartEvent(final Record<?> record) {
+        var castRecord = (MessageStartEventSubscriptionRecordValue) record.getValue();
 
+        // TODO: _id possibly isn't unique, using (messageName, WorkflowKey) as identifier for upsert
+        var document =  new Document("_id", record.getPosition())
+                .append("messageName", castRecord.getMessageName())
+                .append("WorkflowKey", castRecord.getWorkflowKey())
+                .append("elementId", castRecord.getStartEventId())
+                .append("timestamp", new Date(record.getTimestamp()))
+                .append("state", record.getIntent().name());
+
+        var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
+        result.add(new Tuple<>(getCollectionName(record), new UpdateOneModel<>(
+                new Document("messageName", castRecord.getMessageName()).append("WorkflowKey", castRecord.getWorkflowKey()),
+                new Document("$set", document),
+                new UpdateOptions().upsert(true)
+        )));
+
+        return result;
+    }
 
 
 }
