@@ -195,7 +195,7 @@ public class ZeebeMongoClient {
             case INCIDENT: return handleIncidentEvent(record);
             case MESSAGE: return handleMessageEvent(record);
             case MESSAGE_SUBSCRIPTION: return handleMessageSubscriptionStartEvent(record);
-//            case WORKFLOW_INSTANCE_SUBSCRIPTION: return jobReplaceCommand(record);
+            case WORKFLOW_INSTANCE_SUBSCRIPTION: return handleWorkflowInstanceSubscriptionEvent(record);
 //            case JOB_BATCH: return jobReplaceCommand(record);
             case TIMER: return handleTimerEvent(record);
             case MESSAGE_START_EVENT_SUBSCRIPTION: return handleMessageSubscriptionEvent(record);
@@ -566,6 +566,29 @@ public class ZeebeMongoClient {
         var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
         result.add(new Tuple<>(getCollectionName(record), new UpdateOneModel<>(
                 new Document("messageName", castRecord.getMessageName()).append("WorkflowKey", castRecord.getWorkflowKey()),
+                new Document("$set", document),
+                new UpdateOptions().upsert(true)
+        )));
+
+        return result;
+    }
+
+    private List<Tuple<String, UpdateOneModel<Document>>> handleWorkflowInstanceSubscriptionEvent(final Record<?> record) {
+        if (!record.getIntent().name().equals("CORRELATED")) {
+            return null;
+        }
+
+        var castRecord = (WorkflowInstanceSubscriptionRecordValue) record.getValue();
+
+        var document =  new Document("_id", record.getPosition())
+                .append("messageName", castRecord.getMessageName())
+                .append("messageKey", castRecord.getMessageKey())
+                .append("elementInstanceKey", castRecord.getElementInstanceKey())
+                .append("timestamp", new Date(record.getTimestamp()));
+
+        var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
+        result.add(new Tuple<>(getCollectionName(record), new UpdateOneModel<>(
+                new Document("_id", record.getPosition()),
                 new Document("$set", document),
                 new UpdateOptions().upsert(true)
         )));
