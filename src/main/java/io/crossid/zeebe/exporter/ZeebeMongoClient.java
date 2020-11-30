@@ -196,10 +196,10 @@ public class ZeebeMongoClient {
             case MESSAGE: return handleMessageEvent(record);
             case MESSAGE_SUBSCRIPTION: return handleMessageSubscriptionStartEvent(record);
             case WORKFLOW_INSTANCE_SUBSCRIPTION: return handleWorkflowInstanceSubscriptionEvent(record);
-//            case JOB_BATCH: return jobReplaceCommand(record);
             case TIMER: return handleTimerEvent(record);
             case MESSAGE_START_EVENT_SUBSCRIPTION: return handleMessageSubscriptionEvent(record);
             case VARIABLE: return handleVariableEvent(record);
+//            case JOB_BATCH: return jobReplaceCommand(record);
 //            case VARIABLE_DOCUMENT: return jobReplaceCommand(record);
 //            case WORKFLOW_INSTANCE_CREATION: return jobReplaceCommand(record);
 //            case ERROR: return jobReplaceCommand(record);
