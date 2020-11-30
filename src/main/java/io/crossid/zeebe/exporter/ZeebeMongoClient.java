@@ -197,7 +197,7 @@ public class ZeebeMongoClient {
 //            case MESSAGE_SUBSCRIPTION: return jobReplaceCommand(record);
 //            case WORKFLOW_INSTANCE_SUBSCRIPTION: return jobReplaceCommand(record);
 //            case JOB_BATCH: return jobReplaceCommand(record);
-//            case TIMER: return jobReplaceCommand(record);
+            case TIMER: return handleTimerEvent(record);
 //            case MESSAGE_START_EVENT_SUBSCRIPTION: return jobReplaceCommand(record);
             case VARIABLE: return handleVariableEvent(record);
 //            case VARIABLE_DOCUMENT: return jobReplaceCommand(record);
@@ -475,6 +475,40 @@ public class ZeebeMongoClient {
         return result;
     }
 
+    private List<Tuple<String, UpdateOneModel<Document>>> handleTimerEvent(final Record<?> record) {
+        var castRecord = (TimerRecordValue) record.getValue();
+
+        var timestamp =  new Date(record.getTimestamp());
+
+        var document =  new Document()
+                .append("dueDate", new Date(castRecord.getDueDate()))
+                .append("timestamp", timestamp)
+                .append("state", record.getIntent().name())
+                .append("repetitions", castRecord.getRepetitions());
+
+        // These only need to be set once, on insert
+        var setOnInsert = new Document("creationTime", timestamp);
+        if (castRecord.getWorkflowKey() > 0) {
+            setOnInsert.append("workflowKey", castRecord.getWorkflowKey());
+        }
+
+        if (castRecord.getWorkflowInstanceKey() > 0) {
+            setOnInsert.append("workflowInstanceKey", castRecord.getWorkflowInstanceKey());
+        }
+
+        if (castRecord.getElementInstanceKey() > 0) {
+            setOnInsert.append("elementInstanceKey", castRecord.getElementInstanceKey());
+        }
+
+        var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
+        result.add(new Tuple<>(getCollectionName(record), new UpdateOneModel<>(
+                new Document("_id", record.getKey()),
+                new Document("$set", document).append("$setOnInsert", setOnInsert),
+                new UpdateOptions().upsert(true)
+        )));
+
+        return result;
+    }
 
 
 
