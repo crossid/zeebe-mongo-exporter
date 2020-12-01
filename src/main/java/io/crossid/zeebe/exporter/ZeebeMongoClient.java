@@ -322,7 +322,7 @@ public class ZeebeMongoClient {
                 .append("timestamp", timestamp);
 
 
-        return new Tuple<>(getCollectionName("element_instance") , new UpdateOneModel<>(
+        return new Tuple<>(getCollectionName("element_instance_state_transition") , new UpdateOneModel<>(
                 new Document("_id", record.getPosition()),
                 new Document("$set", document),
                 new UpdateOptions().upsert(true)
