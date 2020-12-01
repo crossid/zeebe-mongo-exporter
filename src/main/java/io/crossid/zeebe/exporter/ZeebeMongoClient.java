@@ -376,7 +376,7 @@ public class ZeebeMongoClient {
         var timestamp = new Date(record.getTimestamp());
 
         for (var workflow : castRecord.getDeployedWorkflows()) {
-            result.add(new Tuple<>("", workflowReplaceCommand(workflow, timestamp)));
+            result.add(new Tuple<>(getCollectionName("flow_instance"), workflowReplaceCommand(workflow, timestamp)));
         }
 
         return result;
