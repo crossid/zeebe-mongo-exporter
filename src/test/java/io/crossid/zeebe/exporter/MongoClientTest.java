@@ -34,7 +34,7 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
     private MongoExporterConfiguration configuration;
     private Logger logSpy;
     private ZeebeMongoClient client;
-    private List<Tuple<String, ReplaceOneModel<Document>>>  bulkRequest;
+    private List<Tuple<String, UpdateOneModel<Document>>>  bulkRequest;
 
     @Before
     public void init() {
