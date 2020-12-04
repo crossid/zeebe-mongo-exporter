@@ -445,7 +445,7 @@ public class ZeebeMongoClient {
         var castRecord = (IncidentRecordValue) record.getValue();
 
         var document =  new Document()
-                .append("errorType", castRecord.getErrorType())
+                .append("errorType", castRecord.getErrorType().name())
                 .append("errorMessage", castRecord.getErrorMessage())
                 .append("workflowInstanceKey", castRecord.getWorkflowInstanceKey())
                 .append("elementInstanceKey", castRecord.getElementInstanceKey());

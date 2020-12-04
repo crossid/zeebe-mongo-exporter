@@ -11,11 +11,17 @@ import static org.mockito.Mockito.when;
 
 import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.UpdateOneModel;
+import io.zeebe.engine.state.instance.Incident;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.value.ErrorType;
+import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.protocol.record.value.VariableRecordValue;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -43,6 +49,30 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
         logSpy = spy(LoggerFactory.getLogger(MongoClientTest.class));
         bulkRequest = new ArrayList<>();
         client = new ZeebeMongoClient(configuration, logSpy, bulkRequest);
+    }
+
+    @Test
+    public void incidentShouldBeExported() {
+        final Record<IncidentRecordValue> recordMock = mock(Record.class);
+        when(recordMock.getPartitionId()).thenReturn(1);
+        when(recordMock.getKey()).thenReturn(RECORD_KEY);
+        when(recordMock.getValueType()).thenReturn(ValueType.INCIDENT);
+        when(recordMock.toJson()).thenReturn("{}");
+        Date timestamp = new Date();
+        when(recordMock.getTimestamp()).thenReturn(timestamp.getTime());
+        when(recordMock.getIntent()).thenReturn(IncidentIntent.CREATED);
+
+
+        final IncidentRecordValue value = mock(IncidentRecordValue.class);
+        when(value.getErrorType()).thenReturn(ErrorType.CONDITION_ERROR);
+        when(value.getErrorMessage()).thenReturn("msg");
+        when(value.getWorkflowInstanceKey()).thenReturn(Long.valueOf(1));
+        when(value.getElementInstanceKey()).thenReturn(Long.valueOf(1));
+        when(value.getJobKey()).thenReturn(Long.valueOf(1));
+        when(recordMock.getValue()).thenReturn(value);
+
+        client.insert(recordMock);
+        client.flush();
     }
 
     @Test
