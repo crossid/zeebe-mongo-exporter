@@ -144,6 +144,7 @@ public class ZeebeMongoClient {
             }
         }
 
+        bulkOperations.clear();
         for (var collectionName : ops.keySet()) {
             final var operationsPerCollection = ops.get(collectionName);
             if (!operationsPerCollection.isEmpty()) {

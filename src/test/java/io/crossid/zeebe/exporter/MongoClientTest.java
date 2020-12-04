@@ -51,6 +51,15 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
         client = new ZeebeMongoClient(configuration, logSpy, bulkRequest);
     }
 
+    @Test void varsShouldBeExported() {
+        final Record<VariableRecordValue> recordMock = mock(Record.class);
+        when(recordMock.getPartitionId()).thenReturn(1);
+        when(recordMock.getKey()).thenReturn(RECORD_KEY);
+        when(recordMock.getValueType()).thenReturn(ValueType.VARIABLE);
+
+
+    }
+
     @Test
     public void incidentShouldBeExported() {
         final Record<IncidentRecordValue> recordMock = mock(Record.class);
