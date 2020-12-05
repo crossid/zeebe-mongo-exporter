@@ -16,9 +16,8 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.protocol.record.value.ErrorType;
-import io.zeebe.protocol.record.value.IncidentRecordValue;
-import io.zeebe.protocol.record.value.VariableRecordValue;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.*;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -51,11 +50,40 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
         client = new ZeebeMongoClient(configuration, logSpy, bulkRequest);
     }
 
-    @Test void varsShouldBeExported() {
+    @Test
+    public void varsShouldBeExported() {
         final Record<VariableRecordValue> recordMock = mock(Record.class);
         when(recordMock.getPartitionId()).thenReturn(1);
         when(recordMock.getKey()).thenReturn(RECORD_KEY);
         when(recordMock.getValueType()).thenReturn(ValueType.VARIABLE);
+
+
+    }
+
+    @Test
+    public void flowShouldChangeStatus() {
+        final Record<WorkflowInstanceRecordValue> recordMock = mock(Record.class);
+        when(recordMock.getPartitionId()).thenReturn(1);
+        when(recordMock.getKey()).thenReturn(RECORD_KEY);
+        when(recordMock.getValueType()).thenReturn(ValueType.WORKFLOW_INSTANCE);
+        when(recordMock.toJson()).thenReturn("{}");
+        when(recordMock.getIntent()).thenReturn(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+
+        final WorkflowInstanceRecordValue value = mock(WorkflowInstanceRecordValue.class);
+        when(value.getBpmnProcessId()).thenReturn("1");
+        when(value.getVersion()).thenReturn(1);
+        when(value.getWorkflowKey()).thenReturn(1L);
+        when(value.getBpmnElementType()).thenReturn(BpmnElementType.START_EVENT);
+
+        when(recordMock.getValue()).thenReturn(value);
+
+        client.insert(recordMock);
+        client.flush();
+
+        when(recordMock.getIntent()).thenReturn(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        when(value.getBpmnElementType()).thenReturn(BpmnElementType.END_EVENT);
+        client.insert(recordMock);
+        client.flush();
 
 
     }
