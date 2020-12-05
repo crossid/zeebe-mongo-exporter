@@ -377,7 +377,7 @@ public class ZeebeMongoClient {
         var timestamp = new Date(record.getTimestamp());
 
         for (var workflow : castRecord.getDeployedWorkflows()) {
-            result.add(new Tuple<>(getCollectionName("flow_instance"), workflowReplaceCommand(workflow, timestamp)));
+            result.add(new Tuple<>(getCollectionName("flow"), workflowReplaceCommand(workflow, timestamp)));
         }
 
         return result;
@@ -565,7 +565,7 @@ public class ZeebeMongoClient {
                 .append("state", record.getIntent().name());
 
         var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
-        result.add(new Tuple<>(getCollectionName(record), new UpdateOneModel<>(
+        result.add(new Tuple<>(getCollectionName("message_subscription"), new UpdateOneModel<>(
                 new Document("messageName", castRecord.getMessageName()).append("WorkflowKey", castRecord.getWorkflowKey()),
                 new Document("$set", document),
                 new UpdateOptions().upsert(true)
@@ -588,7 +588,7 @@ public class ZeebeMongoClient {
                 .append("timestamp", new Date(record.getTimestamp()));
 
         var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
-        result.add(new Tuple<>(getCollectionName(record), new UpdateOneModel<>(
+        result.add(new Tuple<>(getCollectionName("message_correlation"), new UpdateOneModel<>(
                 new Document("_id", record.getPosition()),
                 new Document("$set", document),
                 new UpdateOptions().upsert(true)
