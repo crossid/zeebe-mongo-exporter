@@ -221,7 +221,10 @@ public class ZeebeMongoClient {
         var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
         var timestamp = new Date(record.getTimestamp());
 
-        result.add(workflowInstanceReplaceCommand(record, timestamp));
+        var castRecord = (WorkflowInstanceRecordValue) record.getValue();
+        if (record.getKey() != castRecord.getWorkflowKey()) {
+            result.add(workflowInstanceReplaceCommand(record, timestamp));
+        }
         result.add(elementInstanceReplaceCommand(record, timestamp));
         result.add(elementInstanceStateTransitionReplaceCommand(record, timestamp));
 
@@ -264,10 +267,6 @@ public class ZeebeMongoClient {
 
     private Tuple<String, UpdateOneModel<Document>> elementInstanceReplaceCommand(final Record<?> record, Date timestamp) {
         var castRecord = (WorkflowInstanceRecordValue) record.getValue();
-
-        if (record.getKey() != castRecord.getWorkflowKey()) {
-            return null;
-        }
 
         var document = new Document()
                 .append("bpmnElementType", castRecord.getBpmnElementType().name())
