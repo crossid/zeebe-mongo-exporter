@@ -222,7 +222,7 @@ public class ZeebeMongoClient {
         var timestamp = new Date(record.getTimestamp());
 
         var castRecord = (WorkflowInstanceRecordValue) record.getValue();
-        if (record.getKey() != castRecord.getWorkflowKey()) {
+        if (record.getKey() == castRecord.getWorkflowInstanceKey()) {
             result.add(workflowInstanceReplaceCommand(record, timestamp));
         }
         result.add(elementInstanceReplaceCommand(record, timestamp));
@@ -246,6 +246,7 @@ public class ZeebeMongoClient {
             document.append("parentElementInstanceKey", castRecord.getParentElementInstanceKey());
         }
 
+        System.out.println("Intent name: " + record.getIntent().name() + " Key: " + record.getKey() + " Workflow instance Key: " + castRecord.getWorkflowInstanceKey());
         switch (record.getIntent().name()) {
             case "ELEMENT_ACTIVATED":
                 document.append("state", "active").append("startTime", timestamp);
