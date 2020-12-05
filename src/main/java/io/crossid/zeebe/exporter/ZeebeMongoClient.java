@@ -265,6 +265,10 @@ public class ZeebeMongoClient {
     private Tuple<String, UpdateOneModel<Document>> elementInstanceReplaceCommand(final Record<?> record, Date timestamp) {
         var castRecord = (WorkflowInstanceRecordValue) record.getValue();
 
+        if (record.getKey() != castRecord.getWorkflowKey()) {
+            return null;
+        }
+
         var document = new Document()
                 .append("bpmnElementType", castRecord.getBpmnElementType().name())
                 .append("workflowInstanceKey", castRecord.getWorkflowInstanceKey())
