@@ -259,7 +259,7 @@ public class ZeebeMongoClient {
                 break;
         }
 
-        return new Tuple<>( getCollectionName(record), new UpdateOneModel<>(
+        return new Tuple<>( getCollectionName("flow_instance"), new UpdateOneModel<>(
                 new Document("_id", castRecord.getWorkflowInstanceKey()),
                 new Document("$set", document),
                 new UpdateOptions().upsert(true)
@@ -361,7 +361,7 @@ public class ZeebeMongoClient {
         }
 
         var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
-        result.add(new Tuple<>(getCollectionName(record), new UpdateOneModel<>(
+        result.add(new Tuple<>(getCollectionName("job"), new UpdateOneModel<>(
                 new Document("_id", record.getKey()),
                 new Document("$set", document),
                 new UpdateOptions().upsert(true)
@@ -420,7 +420,7 @@ public class ZeebeMongoClient {
                 .append("value", parseJsonValue(castRecord.getValue()))
                 .append("timestamp", new Date(record.getTimestamp()));
 
-        return new Tuple<>(getCollectionName(record), new UpdateOneModel<>(
+        return new Tuple<>(getCollectionName("variable"), new UpdateOneModel<>(
                 new Document("_id", record.getKey()),
                 new Document("$set", document),
                 new UpdateOptions().upsert(true)
@@ -439,7 +439,7 @@ public class ZeebeMongoClient {
                 .append("timestamp", new Date(record.getTimestamp()));
 
 
-        return new Tuple<>(getCollectionName(record)+"_update", new UpdateOneModel<>(
+        return new Tuple<>(getCollectionName("variable_update"), new UpdateOneModel<>(
                 new Document("_id", record.getPosition()),
                 new Document("$set", document),
                 new UpdateOptions().upsert(true)
@@ -471,7 +471,7 @@ public class ZeebeMongoClient {
         }
 
         var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
-        result.add(new Tuple<>(getCollectionName(record), new UpdateOneModel<>(
+        result.add(new Tuple<>(getCollectionName("incident"), new UpdateOneModel<>(
                 new Document("_id", record.getKey()),
                 new Document("$set", document),
                 new UpdateOptions().upsert(true)
@@ -506,7 +506,7 @@ public class ZeebeMongoClient {
         }
 
         var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
-        result.add(new Tuple<>(getCollectionName(record), new UpdateOneModel<>(
+        result.add(new Tuple<>(getCollectionName("timer"), new UpdateOneModel<>(
                 new Document("_id", record.getKey()),
                 new Document("$set", document).append("$setOnInsert", setOnInsert),
                 new UpdateOptions().upsert(true)
@@ -527,7 +527,7 @@ public class ZeebeMongoClient {
                 .append("timeToLive", castRecord.getTimeToLive());
 
         var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
-        result.add(new Tuple<>(getCollectionName(record), new UpdateOneModel<>(
+        result.add(new Tuple<>(getCollectionName("message"), new UpdateOneModel<>(
                 new Document("_id", record.getKey()),
                 new Document("$set", document),
                 new UpdateOptions().upsert(true)
