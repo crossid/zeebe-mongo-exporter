@@ -12,20 +12,23 @@ import static org.mockito.Mockito.when;
 import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.UpdateOneModel;
 import io.zeebe.engine.state.instance.Incident;
+import io.zeebe.exporter.api.context.Configuration;
+import io.zeebe.exporter.api.context.Context;
+import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.*;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.time.Duration;
+import java.util.*;
 import java.util.stream.IntStream;
 
 import io.zeebe.test.util.socket.SocketUtil;
+import io.zeebe.util.ZbLogger;
 import org.bson.Document;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,6 +43,7 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
     private Logger logSpy;
     private ZeebeMongoClient client;
     private List<Tuple<String, UpdateOneModel<Document>>>  bulkRequest;
+    private long lastExportedRecordPosition;
 
     @Before
     public void init() {
@@ -56,8 +60,6 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
         when(recordMock.getPartitionId()).thenReturn(1);
         when(recordMock.getKey()).thenReturn(RECORD_KEY);
         when(recordMock.getValueType()).thenReturn(ValueType.VARIABLE);
-
-
     }
 
     @Test
@@ -110,105 +112,5 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
 
         client.insert(recordMock);
         client.flush();
-    }
-
-    @Test
-    public void shouldNotLogWarningWhenIndexingSmallVariableValue() {
-        // given
-//        final String variableValue = "x".repeat(configuration.col.ignoreVariablesAbove);
-
-        final Record<VariableRecordValue> recordMock = mock(Record.class);
-        when(recordMock.getPartitionId()).thenReturn(1);
-        when(recordMock.getKey()).thenReturn(RECORD_KEY);
-        when(recordMock.getValueType()).thenReturn(ValueType.VARIABLE);
-        when(recordMock.toJson()).thenReturn("{}");
-
-        final VariableRecordValue value = mock(VariableRecordValue.class);
-        when(value.getValue()).thenReturn("1234");
-        when(recordMock.getValue()).thenReturn(value);
-
-        // when
-        client.insert(recordMock);
-        client.flush();
-
-        // then
-        verify(logSpy, never()).warn(anyString(), ArgumentMatchers.<Object[]>any());
-    }
-
-    @Test
-    public void shouldLogWarnWhenIndexingLargeVariableValue() {
-        // given
-        final String variableName = "varName";
-        final String variableValue = "x".repeat(configuration.col.ignoreVariablesAbove + 1);
-        final long scopeKey = 1234L;
-        final long workflowInstanceKey = 5678L;
-
-        final Record<VariableRecordValue> recordMock = mock(Record.class);
-        when(recordMock.getPartitionId()).thenReturn(1);
-        when(recordMock.getKey()).thenReturn(RECORD_KEY);
-        when(recordMock.getValueType()).thenReturn(ValueType.VARIABLE);
-        when(recordMock.toJson()).thenReturn("{}");
-
-        final VariableRecordValue value = mock(VariableRecordValue.class);
-        when(value.getName()).thenReturn(variableName);
-        when(value.getValue()).thenReturn(variableValue);
-        when(value.getScopeKey()).thenReturn(scopeKey);
-        when(value.getWorkflowInstanceKey()).thenReturn(workflowInstanceKey);
-
-        when(recordMock.getValue()).thenReturn(value);
-
-        // when
-        client.insert(recordMock);
-
-        // then
-        final ArgumentCaptor<Object[]> argumentCaptor = ArgumentCaptor.forClass(Object[].class);
-
-        verify(logSpy).warn(anyString(), argumentCaptor.capture());
-
-        // required to explicitly cast List<Objects[]> to List<Object>
-        final List<Object> args = new ArrayList<>(argumentCaptor.getAllValues());
-        assertThat(args)
-                .contains(
-                        RECORD_KEY,
-                        variableName,
-                        variableValue.getBytes().length,
-                        scopeKey,
-                        workflowInstanceKey);
-    }
-
-    @Test
-    public void shouldThrowExceptionIfFailToFlushBulk() {
-        // given
-        final int bulkSize = 10;
-
-        final Record<VariableRecordValue> recordMock = mock(Record.class);
-        when(recordMock.getPartitionId()).thenReturn(1);
-        when(recordMock.getValueType()).thenReturn(ValueType.WORKFLOW_INSTANCE);
-
-        // bulk contains records that fail on flush
-        IntStream.range(0, bulkSize)
-                .forEach(
-                        i -> {
-                            when(recordMock.getKey()).thenReturn(RECORD_KEY + i);
-                            when(recordMock.toJson()).thenReturn("invalid-json-" + i);
-                            client.insert(recordMock);
-                        });
-
-        // and one valid record
-        when(recordMock.getKey()).thenReturn(RECORD_KEY + bulkSize);
-        when(recordMock.toJson()).thenReturn("{}");
-        client.insert(recordMock);
-
-        // when/then
-        assertThatThrownBy(client::flush)
-                .isInstanceOf(MongoExporterException.class)
-                .hasMessage("Failed to flush all items of the bulk");
-
-        verify(logSpy)
-                .warn(
-                        "Failed to flush {} item(s) of bulk request [type: {}, reason: {}]",
-                        bulkSize,
-                        "mapper_parsing_exception",
-                        "failed to parse");
     }
 }

@@ -271,6 +271,7 @@ public class ZeebeMongoClient {
 
         var document = new Document()
                 .append("bpmnElementType", castRecord.getBpmnElementType().name())
+                .append("state", getElementInstanceState(record))
                 .append("workflowInstanceKey", castRecord.getWorkflowInstanceKey())
                 .append("workflowKey", castRecord.getWorkflowKey());
 
