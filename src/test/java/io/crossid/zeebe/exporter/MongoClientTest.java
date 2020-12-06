@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.UpdateOneModel;
+import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.Incident;
 import io.zeebe.exporter.api.context.Configuration;
 import io.zeebe.exporter.api.context.Context;
