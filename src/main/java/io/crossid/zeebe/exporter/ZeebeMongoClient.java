@@ -68,7 +68,6 @@ public class ZeebeMongoClient {
 
     public void bulk(final List<Tuple<String, UpdateOneModel<Document>>> bulkOperation) {
         // TODO: generalise, cache, etc
-
         if (bulkOperation == null) {
             return;
         }
