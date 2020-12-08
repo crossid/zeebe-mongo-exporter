@@ -197,10 +197,10 @@ public class ZeebeMongoClient {
             case WORKFLOW_INSTANCE: return handleWorkflowInstanceEvent(record);
             case INCIDENT: return handleIncidentEvent(record);
             case MESSAGE: return handleMessageEvent(record);
-            case MESSAGE_SUBSCRIPTION: return handleMessageSubscriptionStartEvent(record);
+            case MESSAGE_SUBSCRIPTION: return handleMessageSubscriptionEvent(record);
             case WORKFLOW_INSTANCE_SUBSCRIPTION: return handleWorkflowInstanceSubscriptionEvent(record);
             case TIMER: return handleTimerEvent(record);
-            case MESSAGE_START_EVENT_SUBSCRIPTION: return handleMessageSubscriptionEvent(record);
+            case MESSAGE_START_EVENT_SUBSCRIPTION: return handleMessageSubscriptionStartEvent(record);
             case VARIABLE: return handleVariableEvent(record);
 //            case JOB_BATCH: return jobReplaceCommand(record);
 //            case VARIABLE_DOCUMENT: return jobReplaceCommand(record);
@@ -484,8 +484,6 @@ public class ZeebeMongoClient {
     }
 
     private List<Tuple<String, UpdateOneModel<Document>>> handleTimerEvent(final Record<?> record) {
-        System.out.println("Writing timer");
-
         var castRecord = (TimerRecordValue) record.getValue();
 
         var timestamp =  new Date(record.getTimestamp());
