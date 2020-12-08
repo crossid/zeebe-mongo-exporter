@@ -25,6 +25,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.*;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -109,6 +110,32 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
         when(value.getWorkflowInstanceKey()).thenReturn(Long.valueOf(1));
         when(value.getElementInstanceKey()).thenReturn(Long.valueOf(1));
         when(value.getJobKey()).thenReturn(Long.valueOf(1));
+        when(recordMock.getValue()).thenReturn(value);
+
+        client.insert(recordMock);
+        client.flush();
+    }
+
+    @Test
+    public void timersShouldBeExported() {
+        final Record<TimerRecordValue> recordMock = mock(Record.class);
+        when(recordMock.getPartitionId()).thenReturn(1);
+        when(recordMock.getKey()).thenReturn(RECORD_KEY);
+        when(recordMock.getValueType()).thenReturn(ValueType.TIMER);
+
+        var timeStamp = new Date().getTime();
+        when(recordMock.getTimestamp()).thenReturn(timeStamp);
+        when(recordMock.getIntent()).thenReturn(IncidentIntent.CREATED);
+
+
+        final TimerRecordValue value = mock(TimerRecordValue.class);
+        var dueDate = timeStamp + 1000000;
+        when(value.getDueDate()).thenReturn(dueDate);
+        when(value.getRepetitions()).thenReturn(1);
+        when(value.getWorkflowKey()).thenReturn(1L);
+        when(value.getWorkflowInstanceKey()).thenReturn(1L);
+        when(value.getElementInstanceKey()).thenReturn(1L);
+
         when(recordMock.getValue()).thenReturn(value);
 
         client.insert(recordMock);

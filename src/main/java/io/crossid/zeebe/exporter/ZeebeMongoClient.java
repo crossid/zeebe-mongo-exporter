@@ -187,6 +187,9 @@ public class ZeebeMongoClient {
     private List<Tuple<String, UpdateOneModel<Document>>> newReplaceCommand(final Record<?> record) {
         final var valueType = record.getValueType();
 
+        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        System.out.println(valueType.name());
+        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
         switch (valueType) {
             case JOB: return handleJobEvent(record);
@@ -481,6 +484,8 @@ public class ZeebeMongoClient {
     }
 
     private List<Tuple<String, UpdateOneModel<Document>>> handleTimerEvent(final Record<?> record) {
+        System.out.println("Writing timer");
+
         var castRecord = (TimerRecordValue) record.getValue();
 
         var timestamp =  new Date(record.getTimestamp());

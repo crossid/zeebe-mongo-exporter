@@ -55,6 +55,8 @@ public class MongoExporterConfiguration {
                 return col.workflowInstanceCreation;
             case WORKFLOW_INSTANCE_SUBSCRIPTION:
                 return col.workflowInstanceSubscription;
+            case TIMER:
+                return col.timers;
             default:
                 return false;
         }
@@ -95,7 +97,7 @@ public class MongoExporterConfiguration {
         public boolean workflowInstance = true;
         public boolean workflowInstanceCreation = false;
         public boolean workflowInstanceSubscription = false;
-
+        public boolean timers = true;
         // size limits
         public int ignoreVariablesAbove = 90000000;
 
@@ -135,6 +137,8 @@ public class MongoExporterConfiguration {
                     + workflowInstanceCreation
                     + ", workflowInstanceSubscription="
                     + workflowInstanceSubscription
+                    + ", timers="
+                    + timers
                     + ", ignoreVariablesAbove="
                     + ignoreVariablesAbove
                     + '}';
