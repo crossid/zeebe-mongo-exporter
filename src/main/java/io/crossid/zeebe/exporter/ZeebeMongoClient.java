@@ -492,8 +492,7 @@ public class ZeebeMongoClient {
                 .append("dueDate", new Date(castRecord.getDueDate()))
                 .append("timestamp", timestamp)
                 .append("state", record.getIntent().name())
-                .append("repetitions", castRecord.getRepetitions())
-                .append("elementInstance", castRecord.getElementInstanceKey());
+                .append("repetitions", castRecord.getRepetitions());
 
         // These only need to be set once, on insert
         var setOnInsert = new Document("creationTime", timestamp);
