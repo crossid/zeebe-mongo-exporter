@@ -90,8 +90,8 @@ public class MongoExporterConfiguration {
         public boolean incident = true;
         public boolean job = true;
         public boolean jobBatch = false;
-        public boolean message = false;
-        public boolean messageSubscription = false;
+        public boolean message = true;
+        public boolean messageSubscription = true;
         public boolean variable = true;
         public boolean variableDocument = true;
         public boolean workflowInstance = true;
