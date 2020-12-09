@@ -187,10 +187,6 @@ public class ZeebeMongoClient {
     private List<Tuple<String, UpdateOneModel<Document>>> newReplaceCommand(final Record<?> record) {
         final var valueType = record.getValueType();
 
-        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        System.out.println(valueType.name());
-        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-
         switch (valueType) {
             case JOB: return handleJobEvent(record);
             case DEPLOYMENT: return handleDeploymentEvent(record);
@@ -273,6 +269,7 @@ public class ZeebeMongoClient {
 
         var document = new Document()
                 .append("bpmnElementType", castRecord.getBpmnElementType().name())
+                .append("elementId", castRecord.getElementId())
                 .append("state", getElementInstanceState(record))
                 .append("workflowInstanceKey", castRecord.getWorkflowInstanceKey())
                 .append("workflowKey", castRecord.getWorkflowKey());
