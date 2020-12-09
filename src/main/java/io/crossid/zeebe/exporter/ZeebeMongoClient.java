@@ -10,6 +10,7 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.*;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
+import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 import org.bson.Document;
 import org.bson.json.JsonParseException;
 import org.slf4j.Logger;
@@ -379,21 +380,23 @@ public class ZeebeMongoClient {
 
         var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
         var timestamp = new Date(record.getTimestamp());
+        var resources = castRecord.getResources();
 
         for (var workflow : castRecord.getDeployedWorkflows()) {
-            result.add(new Tuple<>(getCollectionName("flow"), workflowReplaceCommand(workflow, timestamp)));
+            var resource = resources.stream().filter(r -> r.getResourceName().equals(workflow.getResourceName())).iterator().next();
+            result.add(new Tuple<>(getCollectionName("flow"), workflowReplaceCommand(workflow, resource, timestamp)));
         }
 
         return result;
     }
 
-    private UpdateOneModel<Document> workflowReplaceCommand(DeployedWorkflow record, Date timestamp) {
+    private UpdateOneModel<Document> workflowReplaceCommand(DeployedWorkflow record, DeploymentResource resource, Date timestamp) {
         var document = new Document("_id", record.getWorkflowKey())
                 .append("bpmnProcessId", record.getBpmnProcessId())
+                .append("resourceName", record.getResourceName())
                 .append("version", record.getVersion())
-                .append("resource", record.getResourceName())
-                .append("timestamp", timestamp);
-
+                .append("timestamp", timestamp)
+                .append("resource", resource.getResource());
 
         return new UpdateOneModel<>(
                 new Document("_id", record.getWorkflowKey()),
