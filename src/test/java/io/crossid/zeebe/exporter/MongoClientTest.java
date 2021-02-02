@@ -21,6 +21,7 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.*;
 
@@ -141,4 +142,23 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
         client.insert(recordMock);
         client.flush();
     }
+
+    @Test
+    public void messageSubscriptionShouldBeExported() {
+        final Record<MessageSubscriptionRecordValue> recordMock = mock(Record.class);
+        when(recordMock.getPartitionId()).thenReturn(1);
+        when(recordMock.getKey()).thenReturn(RECORD_KEY);
+        when(recordMock.getValueType()).thenReturn(ValueType.MESSAGE_SUBSCRIPTION);
+        when(recordMock.getIntent()).thenReturn(MessageSubscriptionIntent.OPENED);
+
+        final MessageSubscriptionRecordValue value = mock(MessageSubscriptionRecordValue.class);
+        when(value.getWorkflowInstanceKey()).thenReturn(1L);
+        when(value.getElementInstanceKey()).thenReturn(1L);
+
+        when(recordMock.getValue()).thenReturn(value);
+
+        client.insert(recordMock);
+        client.flush();
+    }
+
 }

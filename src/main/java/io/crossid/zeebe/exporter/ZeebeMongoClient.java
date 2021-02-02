@@ -128,7 +128,7 @@ public class ZeebeMongoClient {
                     var collection = db.getCollection(collectionName);
                     var bulkWriteResult = collection.bulkWrite(operationsPerCollection);
                     operationsPerCollection.clear();
-                    log.debug("Flushed to collection {}, {} inserted, {} updated", collectionName, bulkWriteResult.getInsertedCount(), bulkWriteResult.getModifiedCount());
+                    log.debug("Flushed to collection {}, {} inserted, {} updated", collectionName, bulkWriteResult.getUpserts().size(), bulkWriteResult.getModifiedCount());
                 }
                 catch (Exception e) {
                     log.warn(
@@ -236,6 +236,7 @@ public class ZeebeMongoClient {
                 .append("bpmnProcessId", castRecord.getBpmnProcessId())
                 .append("version", castRecord.getVersion())
                 .append("workflowKey", castRecord.getWorkflowKey());
+
 
         if (castRecord.getParentWorkflowInstanceKey() > 0) {
             document.append("parentWorkflowInstanceKey", castRecord.getParentWorkflowInstanceKey());
@@ -540,6 +541,8 @@ public class ZeebeMongoClient {
     }
 
     private List<Tuple<String, UpdateOneModel<Document>>> handleMessageSubscriptionEvent(final Record<?> record) {
+        System.out.println("handleMessageSubscriptionEvent " + getCollectionName(record) + " " + record.getPosition());
+
         var castRecord = (MessageSubscriptionRecordValue) record.getValue();
 
         var document =  new Document()
@@ -561,6 +564,12 @@ public class ZeebeMongoClient {
     }
 
     private List<Tuple<String, UpdateOneModel<Document>>> handleMessageSubscriptionStartEvent(final Record<?> record) {
+        // Hack, just to see if we can circumvent the bug where wrong record value is sent
+        if (record.getValue() instanceof MessageSubscriptionRecordValue) {
+            System.out.println("Wrong value type detected: reported MESSAGE_START_EVENT_SUBSCRIPTION actual value is MessageSubscriptionRecordValue");
+            return handleMessageSubscriptionEvent(record);
+        }
+
         var castRecord = (MessageStartEventSubscriptionRecordValue) record.getValue();
 
         // TODO: _id possibly isn't unique, using (messageName, WorkflowKey) as identifier for upsert

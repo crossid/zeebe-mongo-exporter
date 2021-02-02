@@ -13,6 +13,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -28,14 +29,21 @@ public class MongoExporterIT_OLD {
 //                    .endEvent("end")
 //                    .done();
 
-            Bpmn.createExecutableProcess("testProcess")
-                    .startEvent("start")
-                    .intermediateCatchEvent(
-                            "message", e -> e.message(m -> m.name("catch").zeebeCorrelationKey("=orderId")))
-                    .serviceTask("task", t -> t.zeebeJobType("work").zeebeTaskHeader("foo", "bar"))
-                    .endEvent()
-                    .done();
+//            Bpmn.createExecutableProcess("testProcess")
+//                    .startEvent("start")
+//                    .intermediateCatchEvent(
+//                            "message", e -> e.message(m -> m.name("catch").zeebeCorrelationKey("=orderId")))
+//                    .serviceTask("task", t -> t.zeebeJobType("work").zeebeTaskHeader("foo", "bar"))
+//                    .endEvent()
+//                    .done();
 
+            Bpmn.readModelFromFile(new File("/Users/rani/Downloads/purchase.bpmn"));
+//            Bpmn.createExecutableProcess("testProcess")
+//                    .startEvent("start")
+//                    .receiveTask("Message_0rez9uw")
+//
+//                    .endEvent()
+//                    .done();
 
     public static final BpmnModelInstance SECOND_WORKFLOW =
             Bpmn.createExecutableProcess("secondProcess").startEvent().endEvent().done();
@@ -95,7 +103,7 @@ public class MongoExporterIT_OLD {
         // publish message to trigger message catch event
         client
                 .newPublishMessageCommand()
-                .messageName("catch")
+                .messageName("ship_items")
                 .correlationKey(orderId)
                 .send()
                 .join();
