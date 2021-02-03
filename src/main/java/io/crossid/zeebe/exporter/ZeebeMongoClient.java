@@ -564,12 +564,6 @@ public class ZeebeMongoClient {
     }
 
     private List<Tuple<String, UpdateOneModel<Document>>> handleMessageSubscriptionStartEvent(final Record<?> record) {
-        // Hack, just to see if we can circumvent the bug where wrong record value is sent
-        if (record.getValue() instanceof MessageSubscriptionRecordValue) {
-            System.out.println("Wrong value type detected: reported MESSAGE_START_EVENT_SUBSCRIPTION actual value is MessageSubscriptionRecordValue");
-            return handleMessageSubscriptionEvent(record);
-        }
-
         var castRecord = (MessageStartEventSubscriptionRecordValue) record.getValue();
 
         // TODO: _id possibly isn't unique, using (messageName, WorkflowKey) as identifier for upsert
