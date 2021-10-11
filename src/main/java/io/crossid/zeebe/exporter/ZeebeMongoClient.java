@@ -5,16 +5,14 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.*;
 import com.mongodb.client.model.UpdateOneModel;
-import io.crossid.zeebe.exporter.dto.BulkResponse;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.value.*;
-import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
-import io.zeebe.protocol.record.value.deployment.DeploymentResource;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.*;
+import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import org.bson.Document;
-import org.bson.json.JsonParseException;
 import org.slf4j.Logger;
-import io.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.ValueType;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -191,11 +189,11 @@ public class ZeebeMongoClient {
         switch (valueType) {
             case JOB: return handleJobEvent(record);
             case DEPLOYMENT: return handleDeploymentEvent(record);
-            case WORKFLOW_INSTANCE: return handleWorkflowInstanceEvent(record);
+            case PROCESS_INSTANCE: return handleWorkflowInstanceEvent(record);
             case INCIDENT: return handleIncidentEvent(record);
             case MESSAGE: return handleMessageEvent(record);
             case MESSAGE_SUBSCRIPTION: return handleMessageSubscriptionEvent(record);
-            case WORKFLOW_INSTANCE_SUBSCRIPTION: return handleWorkflowInstanceSubscriptionEvent(record);
+            case PROCESS_MESSAGE_SUBSCRIPTION: return handleWorkflowInstanceSubscriptionEvent(record);
             case TIMER: return handleTimerEvent(record);
             case MESSAGE_START_EVENT_SUBSCRIPTION: return handleMessageSubscriptionStartEvent(record);
             case VARIABLE: return handleVariableEvent(record);
@@ -220,8 +218,8 @@ public class ZeebeMongoClient {
         var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
         var timestamp = new Date(record.getTimestamp());
 
-        var castRecord = (WorkflowInstanceRecordValue) record.getValue();
-        if (record.getKey() == castRecord.getWorkflowInstanceKey()) {
+        var castRecord = (ProcessInstanceRecordValue) record.getValue();
+        if (record.getKey() == castRecord.getProcessInstanceKey()) {
             result.add(workflowInstanceReplaceCommand(record, timestamp));
         }
         result.add(elementInstanceReplaceCommand(record, timestamp));
@@ -231,22 +229,22 @@ public class ZeebeMongoClient {
     }
 
     private Tuple<String, UpdateOneModel<Document>> workflowInstanceReplaceCommand(final Record<?> record, Date timestamp) {
-        var castRecord = (WorkflowInstanceRecordValue) record.getValue();
+        var castRecord = (ProcessInstanceRecordValue) record.getValue();
         var document = new Document()
                 .append("bpmnProcessId", castRecord.getBpmnProcessId())
                 .append("version", castRecord.getVersion())
-                .append("workflowKey", castRecord.getWorkflowKey());
+                .append("workflowKey", castRecord.getProcessDefinitionKey());
 
 
-        if (castRecord.getParentWorkflowInstanceKey() > 0) {
-            document.append("parentWorkflowInstanceKey", castRecord.getParentWorkflowInstanceKey());
+        if (castRecord.getParentProcessInstanceKey() > 0) {
+            document.append("parentWorkflowInstanceKey", castRecord.getParentProcessInstanceKey());
         }
 
         if (castRecord.getParentElementInstanceKey() > 0) {
             document.append("parentElementInstanceKey", castRecord.getParentElementInstanceKey());
         }
 
-        System.out.println("Intent name: " + record.getIntent().name() + " Key: " + record.getKey() + " Workflow instance Key: " + castRecord.getWorkflowInstanceKey());
+        System.out.println("Intent name: " + record.getIntent().name() + " Key: " + record.getKey() + " Workflow instance Key: " + castRecord.getProcessInstanceKey());
         switch (record.getIntent().name()) {
             case "ELEMENT_ACTIVATED":
                 document.append("state", "active").append("startTime", timestamp);
@@ -260,21 +258,21 @@ public class ZeebeMongoClient {
         }
 
         return new Tuple<>( getCollectionName("flow_instance"), new UpdateOneModel<>(
-                new Document("_id", castRecord.getWorkflowInstanceKey()),
+                new Document("_id", castRecord.getProcessInstanceKey()),
                 new Document("$set", document),
                 new UpdateOptions().upsert(true)
         ));
     }
 
     private Tuple<String, UpdateOneModel<Document>> elementInstanceReplaceCommand(final Record<?> record, Date timestamp) {
-        var castRecord = (WorkflowInstanceRecordValue) record.getValue();
+        var castRecord = (ProcessInstanceRecordValue) record.getValue();
 
         var document = new Document()
                 .append("bpmnElementType", castRecord.getBpmnElementType().name())
                 .append("elementId", castRecord.getElementId())
                 .append("state", getElementInstanceState(record))
-                .append("workflowInstanceKey", castRecord.getWorkflowInstanceKey())
-                .append("workflowKey", castRecord.getWorkflowKey());
+                .append("workflowInstanceKey", castRecord.getProcessInstanceKey())
+                .append("workflowKey", castRecord.getProcessDefinitionKey());
 
         switch (record.getIntent().name()) {
             case "ELEMENT_ACTIVATING":
@@ -321,7 +319,7 @@ public class ZeebeMongoClient {
     }
 
     private Tuple<String, UpdateOneModel<Document>> elementInstanceStateTransitionReplaceCommand(final Record<?> record, Date timestamp) {
-        var castRecord = (WorkflowInstanceRecordValue) record.getValue();
+        var castRecord = (ProcessInstanceRecordValue) record.getValue();
 
         var document = new Document()
                 .append("elementInstanceKey", record.getKey())
@@ -342,7 +340,7 @@ public class ZeebeMongoClient {
 
         var document =  new Document()
                 .append("jobType", castRecord.getType())
-                .append("workflowInstanceKey", castRecord.getWorkflowInstanceKey())
+                .append("workflowInstanceKey", castRecord.getProcessInstanceKey())
                 .append("elementInstanceKey", castRecord.getElementInstanceKey())
                 .append("worker", castRecord.getWorker())
                 .append("retries", castRecord.getRetries())
@@ -383,7 +381,7 @@ public class ZeebeMongoClient {
         var timestamp = new Date(record.getTimestamp());
         var resources = castRecord.getResources();
 
-        for (var workflow : castRecord.getDeployedWorkflows()) {
+        for (var workflow : castRecord.getProcessesMetadata()) {
             var resource = resources.stream().filter(r -> r.getResourceName().equals(workflow.getResourceName())).iterator().next();
             result.add(new Tuple<>(getCollectionName("flow"), workflowReplaceCommand(workflow, resource, timestamp)));
         }
@@ -391,8 +389,8 @@ public class ZeebeMongoClient {
         return result;
     }
 
-    private UpdateOneModel<Document> workflowReplaceCommand(DeployedWorkflow record, DeploymentResource resource, Date timestamp) {
-        var document = new Document("_id", record.getWorkflowKey())
+    private UpdateOneModel<Document> workflowReplaceCommand(ProcessMetadataValue record, DeploymentResource resource, Date timestamp) {
+        var document = new Document("_id", record.getProcessDefinitionKey())
                 .append("bpmnProcessId", record.getBpmnProcessId())
                 .append("resourceName", record.getResourceName())
                 .append("version", record.getVersion())
@@ -400,7 +398,7 @@ public class ZeebeMongoClient {
                 .append("resource", resource.getResource());
 
         return new UpdateOneModel<>(
-                new Document("_id", record.getWorkflowKey()),
+                new Document("_id", record.getProcessDefinitionKey()),
                 new Document("$set", document),
                 new UpdateOptions().upsert(true)
         );
@@ -419,7 +417,7 @@ public class ZeebeMongoClient {
 
         var document =  new Document()
                 .append("name", castRecord.getName())
-                .append("workflowInstanceKey", castRecord.getWorkflowInstanceKey())
+                .append("workflowInstanceKey", castRecord.getProcessInstanceKey())
                 .append("scopeKey", castRecord.getScopeKey())
                 .append("value", parseJsonValue(castRecord.getValue()))
                 .append("timestamp", new Date(record.getTimestamp()));
@@ -438,7 +436,7 @@ public class ZeebeMongoClient {
                 .append("variableKey", record.getKey())
                 .append("name", castRecord.getName())
                 .append("value", parseJsonValue(castRecord.getValue()))
-                .append("workflowInstanceKey", castRecord.getWorkflowInstanceKey())
+                .append("workflowInstanceKey", castRecord.getProcessInstanceKey())
                 .append("scopeKey", castRecord.getScopeKey())
                 .append("timestamp", new Date(record.getTimestamp()));
 
@@ -456,7 +454,7 @@ public class ZeebeMongoClient {
         var document =  new Document()
                 .append("errorType", castRecord.getErrorType().name())
                 .append("errorMessage", castRecord.getErrorMessage())
-                .append("workflowInstanceKey", castRecord.getWorkflowInstanceKey())
+                .append("workflowInstanceKey", castRecord.getProcessInstanceKey())
                 .append("elementInstanceKey", castRecord.getElementInstanceKey());
 
         if (castRecord.getJobKey() > 0) {
@@ -497,12 +495,12 @@ public class ZeebeMongoClient {
 
         // These only need to be set once, on insert
         var setOnInsert = new Document("creationTime", timestamp);
-        if (castRecord.getWorkflowKey() > 0) {
-            setOnInsert.append("workflowKey", castRecord.getWorkflowKey());
+        if (castRecord.getProcessDefinitionKey() > 0) {
+            setOnInsert.append("workflowKey", castRecord.getProcessDefinitionKey());
         }
 
-        if (castRecord.getWorkflowInstanceKey() > 0) {
-            setOnInsert.append("workflowInstanceKey", castRecord.getWorkflowInstanceKey());
+        if (castRecord.getProcessInstanceKey() > 0) {
+            setOnInsert.append("workflowInstanceKey", castRecord.getProcessInstanceKey());
         }
 
         if (castRecord.getElementInstanceKey() > 0) {
@@ -548,7 +546,7 @@ public class ZeebeMongoClient {
         var document =  new Document()
                 .append("messageName", castRecord.getMessageName())
                 .append("correlationKey", castRecord.getCorrelationKey())
-                .append("workflowInstanceKey", castRecord.getWorkflowInstanceKey())
+                .append("workflowInstanceKey", castRecord.getProcessInstanceKey())
                 .append("elementInstanceKey", castRecord.getElementInstanceKey())
                 .append("timestamp", new Date(record.getTimestamp()))
                 .append("state", record.getIntent().name());
@@ -569,14 +567,14 @@ public class ZeebeMongoClient {
         // TODO: _id possibly isn't unique, using (messageName, WorkflowKey) as identifier for upsert
         var document =  new Document("_id", record.getPosition())
                 .append("messageName", castRecord.getMessageName())
-                .append("WorkflowKey", castRecord.getWorkflowKey())
+                .append("WorkflowKey", castRecord.getProcessDefinitionKey())
                 .append("elementId", castRecord.getStartEventId())
                 .append("timestamp", new Date(record.getTimestamp()))
                 .append("state", record.getIntent().name());
 
         var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
         result.add(new Tuple<>(getCollectionName("message_subscription"), new UpdateOneModel<>(
-                new Document("messageName", castRecord.getMessageName()).append("WorkflowKey", castRecord.getWorkflowKey()),
+                new Document("messageName", castRecord.getMessageName()).append("WorkflowKey", castRecord.getProcessDefinitionKey()),
                 new Document("$set", document),
                 new UpdateOptions().upsert(true)
         )));
@@ -589,7 +587,7 @@ public class ZeebeMongoClient {
             return null;
         }
 
-        var castRecord = (WorkflowInstanceSubscriptionRecordValue) record.getValue();
+        var castRecord = (ProcessMessageSubscriptionRecordValue) record.getValue();
 
         var document =  new Document("_id", record.getPosition())
                 .append("messageName", castRecord.getMessageName())

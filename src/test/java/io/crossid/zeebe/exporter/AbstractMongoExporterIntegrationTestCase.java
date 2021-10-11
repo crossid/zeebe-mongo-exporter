@@ -7,10 +7,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.crossid.zeebe.exporter.util.MongoContainer;
 import io.crossid.zeebe.exporter.util.MongoNode;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.test.exporter.ExporterIntegrationRule;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
-import io.zeebe.util.ZbLogger;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.test.exporter.ExporterIntegrationRule;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 
 import java.io.IOException;
 import java.util.Map;
@@ -20,6 +19,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AbstractMongoExporterIntegrationTestCase {
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -67,7 +67,7 @@ public class AbstractMongoExporterIntegrationTestCase {
     protected MongoTestClient createMongoClient(
             final MongoExporterConfiguration configuration) {
         return new MongoTestClient(
-                configuration, new ZbLogger("io.crossid.zeebe.exporter.mongo"));
+                configuration,  LoggerFactory.getLogger("io.crossid.zeebe.exporter.mongo"));
     }
 
     protected Map<String, Object> recordToMap(final Record<?> record) {

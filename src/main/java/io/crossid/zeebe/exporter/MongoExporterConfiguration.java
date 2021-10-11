@@ -1,8 +1,8 @@
 package io.crossid.zeebe.exporter;
 
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 
 public class MongoExporterConfiguration {
     // mongo url
@@ -49,11 +49,11 @@ public class MongoExporterConfiguration {
                 return col.variable;
             case VARIABLE_DOCUMENT:
                 return col.variableDocument;
-            case WORKFLOW_INSTANCE:
+            case PROCESS_INSTANCE:
                 return col.workflowInstance;
-            case WORKFLOW_INSTANCE_CREATION:
+            case PROCESS_INSTANCE_CREATION:
                 return col.workflowInstanceCreation;
-            case WORKFLOW_INSTANCE_SUBSCRIPTION:
+            case PROCESS_MESSAGE_SUBSCRIPTION:
                 return col.workflowInstanceSubscription;
             case TIMER:
                 return col.timers;

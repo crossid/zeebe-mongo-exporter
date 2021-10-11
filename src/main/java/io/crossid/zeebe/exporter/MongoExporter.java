@@ -1,13 +1,13 @@
 package io.crossid.zeebe.exporter;
 
 import io.crossid.zeebe.exporter.MongoExporterConfiguration.ColConfiguration;
-import io.zeebe.exporter.api.Exporter;
-import io.zeebe.exporter.api.ExporterException;
-import io.zeebe.exporter.api.context.Context;
-import io.zeebe.exporter.api.context.Controller;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.ValueType;
+import  io.camunda.zeebe.exporter.api.Exporter;;
+import io.camunda.zeebe.exporter.api.ExporterException;
+import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 
 import java.time.Duration;
 
@@ -108,7 +108,7 @@ public class MongoExporter implements Exporter {
     }
 
     private void scheduleDelayedFlush() {
-        controller.scheduleTask(Duration.ofSeconds(configuration.bulk.delay), this::flushAndReschedule);
+        controller.scheduleCancellableTask(Duration.ofSeconds(configuration.bulk.delay), this::flushAndReschedule);
     }
 
     private void flush() {
@@ -148,13 +148,13 @@ public class MongoExporter implements Exporter {
                 createValueCol(ValueType.VARIABLE_DOCUMENT);
             }
             if (col.workflowInstance) {
-                createValueCol(ValueType.WORKFLOW_INSTANCE);
+                createValueCol(ValueType.PROCESS_INSTANCE);
             }
             if (col.workflowInstanceCreation) {
-                createValueCol(ValueType.WORKFLOW_INSTANCE_CREATION);
+                createValueCol(ValueType.PROCESS_INSTANCE_CREATION);
             }
             if (col.workflowInstanceSubscription) {
-                createValueCol(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
+                createValueCol(ValueType.PROCESS_MESSAGE_SUBSCRIPTION);
             }
         }
 

@@ -1,13 +1,13 @@
 package io.crossid.zeebe.exporter;
 
 
-import io.zeebe.exporter.api.context.Configuration;
-import io.zeebe.exporter.api.context.Context;
-import io.zeebe.exporter.api.context.Controller;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.util.ZbLogger;
-import io.zeebe.protocol.record.Record;
+import io.camunda.zeebe.exporter.api.context.Configuration;
+import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.logging.RecordingAppender;
+import io.camunda.zeebe.protocol.record.Record;
 
 import java.time.Duration;
 import java.util.Map;
@@ -15,6 +15,7 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -58,8 +59,8 @@ public class MongoExporterTest_OLD {
         verify(zeebeMongoClient).createCollection(ValueType.MESSAGE);
         verify(zeebeMongoClient).createCollection(ValueType.MESSAGE_SUBSCRIPTION);
 //        verify(esClient).putIndexTemplate(ValueType.RAFT);
-        verify(zeebeMongoClient).createCollection(ValueType.WORKFLOW_INSTANCE);
-        verify(zeebeMongoClient).createCollection(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
+        verify(zeebeMongoClient).createCollection(ValueType.PROCESS_INSTANCE);
+        verify(zeebeMongoClient).createCollection(ValueType.PROCESS_MESSAGE_SUBSCRIPTION);
     }
 
     @Test
@@ -87,8 +88,8 @@ public class MongoExporterTest_OLD {
                         ValueType.MESSAGE,
                         ValueType.MESSAGE_SUBSCRIPTION,
 //                        ValueType.RAFT,
-                        ValueType.WORKFLOW_INSTANCE,
-                        ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION
+                        ValueType.PROCESS_INSTANCE,
+                        ValueType.PROCESS_MESSAGE_SUBSCRIPTION
                 };
 
         // when - then
@@ -124,8 +125,8 @@ public class MongoExporterTest_OLD {
                         ValueType.MESSAGE,
                         ValueType.MESSAGE_SUBSCRIPTION,
 //                        ValueType.RAFT,
-                        ValueType.WORKFLOW_INSTANCE,
-                        ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION
+                        ValueType.PROCESS_INSTANCE,
+                        ValueType.PROCESS_MESSAGE_SUBSCRIPTION
                 };
 
         // when - then
@@ -199,7 +200,7 @@ public class MongoExporterTest_OLD {
         when(zeebeMongoClient.shouldFlush()).thenReturn(true);
 
         final long position = 1234L;
-        final Record record = mockRecord(ValueType.WORKFLOW_INSTANCE, RecordType.EVENT);
+        final Record record = mockRecord(ValueType.PROCESS_INSTANCE, RecordType.EVENT);
         when(record.getPosition()).thenReturn(position);
 
         // when
@@ -239,7 +240,7 @@ public class MongoExporterTest_OLD {
         return new Context() {
             @Override
             public Logger getLogger() {
-                return new ZbLogger("io.zeebe.exporter.elasticsearch");
+                return  LoggerFactory.getLogger("io.crossid.zeebe.exporter.mongo");
             }
 
             @Override
@@ -278,8 +279,9 @@ public class MongoExporterTest_OLD {
             }
 
             @Override
-            public void scheduleTask(Duration duration, Runnable runnable) {
+            public io.camunda.zeebe.exporter.api.context.ScheduledTask scheduleCancellableTask(Duration duration, Runnable runnable) {
                 // ignore
+                return null;
             }
         };
     }

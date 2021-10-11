@@ -11,27 +11,26 @@ import static org.mockito.Mockito.when;
 
 import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.UpdateOneModel;
-import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.instance.Incident;
-import io.zeebe.exporter.api.context.Configuration;
-import io.zeebe.exporter.api.context.Context;
-import io.zeebe.exporter.api.context.Controller;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.value.*;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.instance.Incident;
+import io.camunda.zeebe.exporter.api.context.Configuration;
+import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.*;
 
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.IntStream;
 
-import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.util.ZbLogger;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import org.bson.Document;
 import org.junit.Before;
 import org.junit.Test;
@@ -67,17 +66,17 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
 
     @Test
     public void flowShouldChangeStatus() {
-        final Record<WorkflowInstanceRecordValue> recordMock = mock(Record.class);
+        final Record<ProcessInstanceRecordValue> recordMock = mock(Record.class);
         when(recordMock.getPartitionId()).thenReturn(1);
         when(recordMock.getKey()).thenReturn(RECORD_KEY);
-        when(recordMock.getValueType()).thenReturn(ValueType.WORKFLOW_INSTANCE);
+        when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
         when(recordMock.toJson()).thenReturn("{}");
-        when(recordMock.getIntent()).thenReturn(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        when(recordMock.getIntent()).thenReturn(ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
-        final WorkflowInstanceRecordValue value = mock(WorkflowInstanceRecordValue.class);
+        final ProcessInstanceRecordValue value = mock(ProcessInstanceRecordValue.class);
         when(value.getBpmnProcessId()).thenReturn("1");
         when(value.getVersion()).thenReturn(1);
-        when(value.getWorkflowKey()).thenReturn(1L);
+        when(value.getProcessDefinitionKey()).thenReturn(1L);
         when(value.getBpmnElementType()).thenReturn(BpmnElementType.START_EVENT);
 
         when(recordMock.getValue()).thenReturn(value);
@@ -85,7 +84,7 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
         client.insert(recordMock);
         client.flush();
 
-        when(recordMock.getIntent()).thenReturn(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        when(recordMock.getIntent()).thenReturn(ProcessInstanceIntent.ELEMENT_COMPLETED);
         when(value.getBpmnElementType()).thenReturn(BpmnElementType.END_EVENT);
         client.insert(recordMock);
         client.flush();
@@ -108,7 +107,7 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
         final IncidentRecordValue value = mock(IncidentRecordValue.class);
         when(value.getErrorType()).thenReturn(ErrorType.CONDITION_ERROR);
         when(value.getErrorMessage()).thenReturn("msg");
-        when(value.getWorkflowInstanceKey()).thenReturn(Long.valueOf(1));
+        when(value.getProcessInstanceKey()).thenReturn(Long.valueOf(1));
         when(value.getElementInstanceKey()).thenReturn(Long.valueOf(1));
         when(value.getJobKey()).thenReturn(Long.valueOf(1));
         when(recordMock.getValue()).thenReturn(value);
@@ -133,8 +132,8 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
         var dueDate = timeStamp + 1000000;
         when(value.getDueDate()).thenReturn(dueDate);
         when(value.getRepetitions()).thenReturn(1);
-        when(value.getWorkflowKey()).thenReturn(1L);
-        when(value.getWorkflowInstanceKey()).thenReturn(1L);
+        when(value.getProcessDefinitionKey()).thenReturn(1L);
+        when(value.getProcessInstanceKey()).thenReturn(1L);
         when(value.getElementInstanceKey()).thenReturn(1L);
 
         when(recordMock.getValue()).thenReturn(value);
@@ -149,10 +148,10 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
         when(recordMock.getPartitionId()).thenReturn(1);
         when(recordMock.getKey()).thenReturn(RECORD_KEY);
         when(recordMock.getValueType()).thenReturn(ValueType.MESSAGE_SUBSCRIPTION);
-        when(recordMock.getIntent()).thenReturn(MessageSubscriptionIntent.OPENED);
+        when(recordMock.getIntent()).thenReturn(MessageSubscriptionIntent.CORRELATED);
 
         final MessageSubscriptionRecordValue value = mock(MessageSubscriptionRecordValue.class);
-        when(value.getWorkflowInstanceKey()).thenReturn(1L);
+        when(value.getProcessInstanceKey()).thenReturn(1L);
         when(value.getElementInstanceKey()).thenReturn(1L);
 
         when(recordMock.getValue()).thenReturn(value);
