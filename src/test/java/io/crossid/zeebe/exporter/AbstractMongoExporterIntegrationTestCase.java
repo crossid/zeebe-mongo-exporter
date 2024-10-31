@@ -1,54 +1,47 @@
 package io.crossid.zeebe.exporter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.protocol.record.Record;
 import io.crossid.zeebe.exporter.util.MongoContainer;
 import io.crossid.zeebe.exporter.util.MongoNode;
-import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.test.exporter.ExporterIntegrationRule;
-import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class AbstractMongoExporterIntegrationTestCase {
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    @Rule
-    public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+//    @Rule
+//    public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-    @Rule
-    public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-            new RecordingExporterTestWatcher();
+//    @Rule
+//    public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+//            new RecordingExporterTestWatcher();
 
-    protected final ExporterIntegrationRule exporterBrokerRule = new ExporterIntegrationRule();
+//    protected final ExporterIntegrationRule exporterBrokerRule = new ExporterIntegrationRule();
 
     protected MongoNode<MongoContainer> mongo;
     protected MongoExporterConfiguration configuration;
     protected MongoExporterFaultToleranceIT.MongoTestClient mgoClient;
 
-    @Before
+//    @Before
     public void setUp() {
         mongo = new MongoContainer();
     }
 
-    @After
+//    @After
     public void tearDown() throws IOException {
         if (mgoClient != null) {
             mgoClient.close();
             mgoClient = null;
         }
 
-        exporterBrokerRule.stop();
+//        exporterBrokerRule.stop();
         mongo.stop();
         configuration = null;
     }

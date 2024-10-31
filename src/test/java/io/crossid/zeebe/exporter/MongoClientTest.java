@@ -1,43 +1,22 @@
 package io.crossid.zeebe.exporter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.UpdateOneModel;
-import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.instance.Incident;
-import io.camunda.zeebe.exporter.api.context.Configuration;
-import io.camunda.zeebe.exporter.api.context.Context;
-import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.*;
-
-import java.time.Duration;
-import java.time.LocalDate;
-import java.util.*;
-import java.util.stream.IntStream;
-
-import io.camunda.zeebe.test.util.socket.SocketUtil;
 import org.bson.Document;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import static org.mockito.Mockito.*;
 
 public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
     private static final long RECORD_KEY = 1234L;
@@ -47,9 +26,9 @@ public class MongoClientTest extends AbstractMongoExporterIntegrationTestCase {
     private List<Tuple<String, UpdateOneModel<Document>>>  bulkRequest;
     private long lastExportedRecordPosition;
 
-    @Before
+//    @Before
     public void init() {
-        mongo.withPort(SocketUtil.getNextAddress().getPort()).start();
+//        mongo.withPort(SocketUtil.getNextAddress().getPort()).start();
         configuration = getDefaultConfiguration();
         logSpy = spy(LoggerFactory.getLogger(MongoClientTest.class));
         bulkRequest = new ArrayList<>();

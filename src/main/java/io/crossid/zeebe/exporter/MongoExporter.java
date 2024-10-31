@@ -1,14 +1,13 @@
 package io.crossid.zeebe.exporter;
 
 import io.crossid.zeebe.exporter.MongoExporterConfiguration.ColConfiguration;
-import  io.camunda.zeebe.exporter.api.Exporter;;
+import  io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-
 import java.time.Duration;
 
 import org.slf4j.Logger;
@@ -46,7 +45,7 @@ public class MongoExporter implements Exporter {
         log.info("Exporter opened");
     }
 
-    @Override
+//    @Override
     public void close() {
 
         try {
@@ -65,7 +64,7 @@ public class MongoExporter implements Exporter {
     }
 
     @Override
-    public void export(final Record record) {
+    public void export(final Record<?> record) {
         if (!colsCreated) {
             createCols();
         }

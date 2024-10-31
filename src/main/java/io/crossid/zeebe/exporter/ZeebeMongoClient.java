@@ -7,7 +7,6 @@ import com.mongodb.client.model.*;
 import com.mongodb.client.model.UpdateOneModel;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.*;
-import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import org.bson.Document;
@@ -23,6 +22,7 @@ import com.mongodb.client.MongoClients;
 class Tuple<X, Y> {
     public final X x;
     public final Y y;
+
     public Tuple(X x, Y y) {
         this.x = x;
         this.y = y;
@@ -31,7 +31,7 @@ class Tuple<X, Y> {
 
 public class ZeebeMongoClient {
     private final Logger log;
-//    private final DateTimeFormatter formatter;
+
     private final List<Tuple<String, UpdateOneModel<Document>>> bulkOperations;
     private final MongoExporterConfiguration configuration;
     private final MongoClient client;
@@ -45,7 +45,7 @@ public class ZeebeMongoClient {
     ZeebeMongoClient(
             final MongoExporterConfiguration configuration,
             final Logger log,
-            final List<Tuple<String,UpdateOneModel<Document>>> bulkOperations) {
+            final List<Tuple<String, UpdateOneModel<Document>>> bulkOperations) {
         this.configuration = configuration;
         this.log = log;
         this.client = createClient();
@@ -78,7 +78,7 @@ public class ZeebeMongoClient {
      * @throws MongoExporterException if not all items of the bulk were flushed successfully
      */
     public void flush() {
-       if (bulkOperations.isEmpty()) {
+        if (bulkOperations.isEmpty()) {
             return;
         }
 
@@ -93,6 +93,7 @@ public class ZeebeMongoClient {
             throw new MongoExporterException("Failed to flush bulk", e);
         }
     }
+
     /**
      * @throws MongoExporterException if not all items of the bulk were flushed successfully
      */
@@ -106,8 +107,7 @@ public class ZeebeMongoClient {
             if (!ops.containsKey(op.x)) {
                 ops.put(op.x, new ArrayList<>());
                 ops.get(op.x).add(op.y);
-            }
-            else {
+            } else {
                 var opList = ops.get(op.x);
                 if (!opList.get(opList.size() - 1).equals(op.y)) {
                     opList.add(op.y);
@@ -127,8 +127,7 @@ public class ZeebeMongoClient {
                     var bulkWriteResult = collection.bulkWrite(operationsPerCollection);
                     operationsPerCollection.clear();
                     log.debug("Flushed to collection {}, {} inserted, {} updated", collectionName, bulkWriteResult.getUpserts().size(), bulkWriteResult.getModifiedCount());
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     log.warn(
                             "Failed to flush {} item(s) of bulk request [collection: {}, reason: {}]",
                             operationsPerCollection.size(),
@@ -154,7 +153,7 @@ public class ZeebeMongoClient {
             }
         }
 
-        if (!success &&  exCollectionName != null) {
+        if (!success && exCollectionName != null) {
             throw new MongoExporterException("Failed to bulk write to collection: " + exCollectionName, ex);
         }
 //        return new BulkResponse();
@@ -187,31 +186,42 @@ public class ZeebeMongoClient {
         final var valueType = record.getValueType();
 
         switch (valueType) {
-            case JOB: return handleJobEvent(record);
-            case DEPLOYMENT: return handleDeploymentEvent(record);
-            case PROCESS_INSTANCE: return handleWorkflowInstanceEvent(record);
-            case INCIDENT: return handleIncidentEvent(record);
-            case MESSAGE: return handleMessageEvent(record);
-            case MESSAGE_SUBSCRIPTION: return handleMessageSubscriptionEvent(record);
-            case PROCESS_MESSAGE_SUBSCRIPTION: return handleWorkflowInstanceSubscriptionEvent(record);
-            case TIMER: return handleTimerEvent(record);
-            case MESSAGE_START_EVENT_SUBSCRIPTION: return handleMessageSubscriptionStartEvent(record);
-            case VARIABLE: return handleVariableEvent(record);
+            case JOB:
+                return handleJobEvent(record);
+            case DEPLOYMENT:
+                return handleDeploymentEvent(record);
+            case PROCESS_INSTANCE:
+                return handleWorkflowInstanceEvent(record);
+            case INCIDENT:
+                return handleIncidentEvent(record);
+            case MESSAGE:
+                return handleMessageEvent(record);
+            case MESSAGE_SUBSCRIPTION:
+                return handleMessageSubscriptionEvent(record);
+            case PROCESS_MESSAGE_SUBSCRIPTION:
+                return handleWorkflowInstanceSubscriptionEvent(record);
+            case TIMER:
+                return handleTimerEvent(record);
+            case MESSAGE_START_EVENT_SUBSCRIPTION:
+                return handleMessageSubscriptionStartEvent(record);
+            case VARIABLE:
+                return handleVariableEvent(record);
 //            case JOB_BATCH: return jobReplaceCommand(record);
 //            case VARIABLE_DOCUMENT: return jobReplaceCommand(record);
 //            case WORKFLOW_INSTANCE_CREATION: return jobReplaceCommand(record);
 //            case ERROR: return jobReplaceCommand(record);
 //            case WORKFLOW_INSTANCE_RESULT: return jobReplaceCommand(record);
-            default: return null;
+            default:
+                return null;
         }
     }
 
     private Object parseJsonValue(final String value) {
         var json = "{ value : " + value + "}";
 
-        Map<String,Object> result = new Gson().fromJson(json, Map.class);
+        Map<String, Object> result = new Gson().fromJson(json, Map.class);
 
-        return  result.get("value");
+        return result.get("value");
     }
 
     private List<Tuple<String, UpdateOneModel<Document>>> handleWorkflowInstanceEvent(final Record<?> record) {
@@ -225,7 +235,7 @@ public class ZeebeMongoClient {
         result.add(elementInstanceReplaceCommand(record, timestamp));
         result.add(elementInstanceStateTransitionReplaceCommand(record, timestamp));
 
-        return  result;
+        return result;
     }
 
     private Tuple<String, UpdateOneModel<Document>> workflowInstanceReplaceCommand(final Record<?> record, Date timestamp) {
@@ -257,7 +267,7 @@ public class ZeebeMongoClient {
                 break;
         }
 
-        return new Tuple<>( getCollectionName("flow_instance"), new UpdateOneModel<>(
+        return new Tuple<>(getCollectionName("flow_instance"), new UpdateOneModel<>(
                 new Document("_id", castRecord.getProcessInstanceKey()),
                 new Document("$set", document),
                 new UpdateOptions().upsert(true)
@@ -287,7 +297,7 @@ public class ZeebeMongoClient {
                 break;
         }
 
-        return new Tuple<>(getCollectionName("element_instance") , new UpdateOneModel<>(
+        return new Tuple<>(getCollectionName("element_instance"), new UpdateOneModel<>(
                 new Document("_id", record.getKey()),
                 new Document("$set", document),
                 new UpdateOptions().upsert(true)
@@ -327,7 +337,7 @@ public class ZeebeMongoClient {
                 .append("timestamp", timestamp);
 
 
-        return new Tuple<>(getCollectionName("element_instance_state_transition") , new UpdateOneModel<>(
+        return new Tuple<>(getCollectionName("element_instance_state_transition"), new UpdateOneModel<>(
                 new Document("_id", record.getPosition()),
                 new Document("$set", document),
                 new UpdateOptions().upsert(true)
@@ -338,7 +348,7 @@ public class ZeebeMongoClient {
     private List<Tuple<String, UpdateOneModel<Document>>> handleJobEvent(final Record<?> record) {
         var castRecord = (JobRecordValue) record.getValue();
 
-        var document =  new Document()
+        var document = new Document()
                 .append("jobType", castRecord.getType())
                 .append("workflowInstanceKey", castRecord.getProcessInstanceKey())
                 .append("elementInstanceKey", castRecord.getElementInstanceKey())
@@ -348,16 +358,27 @@ public class ZeebeMongoClient {
 
 
         switch (record.getIntent().name()) {
-            case "ACTIVATED": document.append("state", "ACTIVATED"); break;
-            case "FAILED": document.append("state", "FAILED"); break;
-            case "COMPLETED": document.append("state", "COMPLETED"); break;
-            case "CANCELED": document.append("state", "CANCELED"); break;
-            case "ERROR_THROWN": document.append("state", "ERROR_THROWN"); break;
+            case "ACTIVATED":
+                document.append("state", "ACTIVATED");
+                break;
+            case "FAILED":
+                document.append("state", "FAILED");
+                break;
+            case "COMPLETED":
+                document.append("state", "COMPLETED");
+                break;
+            case "CANCELED":
+                document.append("state", "CANCELED");
+                break;
+            case "ERROR_THROWN":
+                document.append("state", "ERROR_THROWN");
+                break;
             case "CREATED":
             case "TIMED_OUT":
             case "RETRIES_UPDATED":
             default:
-                document.append("state", "ACTIVATABLE"); break;
+                document.append("state", "ACTIVATABLE");
+                break;
         }
 
         var result = new ArrayList<Tuple<String, UpdateOneModel<Document>>>();
@@ -415,7 +436,7 @@ public class ZeebeMongoClient {
     private Tuple<String, UpdateOneModel<Document>> variableReplaceCommand(final Record<?> record) {
         var castRecord = (VariableRecordValue) record.getValue();
 
-        var document =  new Document()
+        var document = new Document()
                 .append("name", castRecord.getName())
                 .append("workflowInstanceKey", castRecord.getProcessInstanceKey())
                 .append("scopeKey", castRecord.getScopeKey())
@@ -432,7 +453,7 @@ public class ZeebeMongoClient {
     private Tuple<String, UpdateOneModel<Document>> variableUpdateReplaceCommand(final Record<?> record) {
         var castRecord = (VariableRecordValue) record.getValue();
 
-        var document =  new Document()
+        var document = new Document()
                 .append("variableKey", record.getKey())
                 .append("name", castRecord.getName())
                 .append("value", parseJsonValue(castRecord.getValue()))
@@ -451,7 +472,7 @@ public class ZeebeMongoClient {
     private List<Tuple<String, UpdateOneModel<Document>>> handleIncidentEvent(final Record<?> record) {
         var castRecord = (IncidentRecordValue) record.getValue();
 
-        var document =  new Document()
+        var document = new Document()
                 .append("errorType", castRecord.getErrorType().name())
                 .append("errorMessage", castRecord.getErrorMessage())
                 .append("workflowInstanceKey", castRecord.getProcessInstanceKey())
@@ -461,7 +482,7 @@ public class ZeebeMongoClient {
             document.append("jobKey", castRecord.getJobKey());
         }
 
-        var timestamp =  new Date(record.getTimestamp());
+        var timestamp = new Date(record.getTimestamp());
 
         switch (record.getIntent().name()) {
             case "CREATED":
@@ -485,9 +506,9 @@ public class ZeebeMongoClient {
     private List<Tuple<String, UpdateOneModel<Document>>> handleTimerEvent(final Record<?> record) {
         var castRecord = (TimerRecordValue) record.getValue();
 
-        var timestamp =  new Date(record.getTimestamp());
+        var timestamp = new Date(record.getTimestamp());
 
-        var document =  new Document()
+        var document = new Document()
                 .append("dueDate", new Date(castRecord.getDueDate()))
                 .append("timestamp", timestamp)
                 .append("state", record.getIntent().name())
@@ -520,7 +541,7 @@ public class ZeebeMongoClient {
     private List<Tuple<String, UpdateOneModel<Document>>> handleMessageEvent(final Record<?> record) {
         var castRecord = (MessageRecordValue) record.getValue();
 
-        var document =  new Document()
+        var document = new Document()
                 .append("name", castRecord.getName())
                 .append("correlationKey", castRecord.getCorrelationKey())
                 .append("messageId", castRecord.getMessageId())
@@ -543,7 +564,7 @@ public class ZeebeMongoClient {
 
         var castRecord = (MessageSubscriptionRecordValue) record.getValue();
 
-        var document =  new Document()
+        var document = new Document()
                 .append("messageName", castRecord.getMessageName())
                 .append("correlationKey", castRecord.getCorrelationKey())
                 .append("workflowInstanceKey", castRecord.getProcessInstanceKey())
@@ -565,7 +586,7 @@ public class ZeebeMongoClient {
         var castRecord = (MessageStartEventSubscriptionRecordValue) record.getValue();
 
         // TODO: _id possibly isn't unique, using (messageName, WorkflowKey) as identifier for upsert
-        var document =  new Document("_id", record.getPosition())
+        var document = new Document("_id", record.getPosition())
                 .append("messageName", castRecord.getMessageName())
                 .append("WorkflowKey", castRecord.getProcessDefinitionKey())
                 .append("elementId", castRecord.getStartEventId())
@@ -589,7 +610,7 @@ public class ZeebeMongoClient {
 
         var castRecord = (ProcessMessageSubscriptionRecordValue) record.getValue();
 
-        var document =  new Document("_id", record.getPosition())
+        var document = new Document("_id", record.getPosition())
                 .append("messageName", castRecord.getMessageName())
                 .append("messageKey", castRecord.getMessageKey())
                 .append("elementInstanceKey", castRecord.getElementInstanceKey())

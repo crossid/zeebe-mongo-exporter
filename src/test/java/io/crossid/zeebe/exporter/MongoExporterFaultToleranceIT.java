@@ -1,10 +1,6 @@
 package io.crossid.zeebe.exporter;
 
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.test.util.TestUtil;
-import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
-import org.junit.Test;
 
 public class MongoExporterFaultToleranceIT extends AbstractMongoExporterIntegrationTestCase {
     /* TODO
